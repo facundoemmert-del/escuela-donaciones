@@ -1,27 +1,16 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  onSnapshot,
+  query,
+  orderBy
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const objetivos = [
-  {
-    nombre: "Inodoro Ferrum",
-    descripcion: "Sanitario para los baños de la nueva escuela.",
-    precio: 300000,
-    recaudado: 120000,
-    urgente: true
-  },
-  {
-    nombre: "Ventana Aula 1",
-    descripcion: "Abertura para mejorar iluminación y ventilación.",
-    precio: 100000,
-    recaudado: 80000,
-    urgente: false
-  },
-  {
-    nombre: "Pizarrón para aula",
-    descripcion: "Pizarrón para equipar un aula nueva.",
-    precio: 180000,
-    recaudado: 180000,
-    urgente: false
-  }
-];
+import { firebaseConfig } from "./firebase-config.js";
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
 const formatoPesos = new Intl.NumberFormat("es-AR", {
   style: "currency",
@@ -34,7 +23,7 @@ function calcularPorcentaje(recaudado, precio) {
   return Math.min(100, Math.round((recaudado / precio) * 100));
 }
 
-function renderizarObjetivos() {
+function renderizarObjetivos(objetivos) {
   const contenedor = document.querySelector(".objetivos");
 
   if (!contenedor) {
@@ -48,11 +37,14 @@ function renderizarObjetivos() {
   let totalRecaudado = 0;
 
   objetivos.forEach(objetivo => {
-    totalMeta += objetivo.precio;
-    totalRecaudado += Math.min(objetivo.recaudado, objetivo.precio);
+    const precio = Number(objetivo.precio || 0);
+    const recaudado = Number(objetivo.recaudado || 0);
 
-    const porcentaje = calcularPorcentaje(objetivo.recaudado, objetivo.precio);
-    const faltante = Math.max(0, objetivo.precio - objetivo.recaudado);
+    totalMeta += precio;
+    totalRecaudado += Math.min(recaudado, precio);
+
+    const porcentaje = calcularPorcentaje(recaudado, precio);
+    const faltante = Math.max(0, precio - recaudado);
     const completado = porcentaje >= 100;
 
     const card = document.createElement("div");
@@ -61,7 +53,7 @@ function renderizarObjetivos() {
     card.innerHTML = `
       <div class="card-header">
         <div>
-          <h3>${objetivo.nombre}</h3>
+          <h3>${objetivo.nombre || "Objetivo sin nombre"}</h3>
           <p>${objetivo.descripcion || ""}</p>
         </div>
         ${objetivo.urgente ? "<span class='etiqueta'>Urgente</span>" : ""}
@@ -72,7 +64,7 @@ function renderizarObjetivos() {
       </div>
 
       <p><strong>${porcentaje}% completado</strong></p>
-      <p>Recaudado: ${formatoPesos.format(Math.min(objetivo.recaudado, objetivo.precio))} de ${formatoPesos.format(objetivo.precio)}</p>
+      <p>Recaudado: ${formatoPesos.format(Math.min(recaudado, precio))} de ${formatoPesos.format(precio)}</p>
       <p>${completado ? "Objetivo completado" : "Faltan: " + formatoPesos.format(faltante)}</p>
 
       <button ${completado ? "disabled" : ""}>
@@ -99,4 +91,16 @@ function actualizarMetaGeneral(totalRecaudado, totalMeta) {
     `${formatoPesos.format(totalRecaudado)} recaudados de ${formatoPesos.format(totalMeta)} (${porcentajeGeneral}%)`;
 }
 
-renderizarObjetivos();
+const q = query(collection(db, "objetivos"), orderBy("creado", "desc"));
+
+onSnapshot(q, snapshot => {
+  const objetivos = [];
+  snapshot.forEach(doc => {
+    objetivos.push({
+      id: doc.id,
+      ...doc.data()
+    });
+  });
+
+  renderizarObjetivos(objetivos);
+});
