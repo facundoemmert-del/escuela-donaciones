@@ -1,0 +1,14 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /objetivos/{objetivoId} {
+      allow read: if true;
+
+      // Regla temporal para pruebas.
+      // Para uso real, en el ZIP de login vamos a proteger escritura con usuario administrador.
+      allow create, update, delete: if true;
+    }
+  }
+}
