@@ -65,6 +65,30 @@
   </section>
 </main>
 
+<div id="modalDonacion" class="modal oculto">
+  <div class="modal-card">
+    <button class="modal-cerrar" id="cerrarModalDonacion">×</button>
+    <h2>Registrar intención de donación</h2>
+    <p id="modalObjetivoNombre"></p>
+
+    <div class="datos-transferencia">
+      <h3>Datos para transferir</h3>
+      <p><strong>Alias:</strong> <span id="aliasDonacion">Cargar desde admin</span></p>
+      <p><strong>CBU/CVU:</strong> <span id="cbuDonacion">Cargar desde admin</span></p>
+      <p><strong>Titular:</strong> <span id="titularDonacion">Cargar desde admin</span></p>
+    </div>
+
+    <form id="donacionForm">
+      <input id="donanteNombre" placeholder="Nombre y apellido del donante" required>
+      <input id="donacionMonto" type="number" placeholder="Monto transferido" required>
+      <input id="donacionComprobante" placeholder="URL del comprobante o link de imagen/PDF" required>
+      <button type="submit">Enviar comprobante para revisión</button>
+    </form>
+
+    <p class="texto-ayuda">La donación quedará pendiente hasta que un administrador verifique el comprobante.</p>
+  </div>
+</div>
+
 <footer>
   <img id="logoFooter" src="" alt="Logo institucional" class="logo-footer oculto">
   <p>Transparencia y participación comunitaria</p>

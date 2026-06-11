@@ -28,6 +28,7 @@
 <div class="admin-tabs">
   <button class="tab-btn activo" data-tab="tab-config" data-permiso="institucional">Información institucional</button>
   <button class="tab-btn" data-tab="tab-objetivos" data-permiso="objetivos">Objetivos</button>
+  <button class="tab-btn" data-tab="tab-donaciones" data-permiso="objetivos">Donaciones pendientes</button>
   <button class="tab-btn" data-tab="tab-obra" data-permiso="obra">Actualización de obra</button>
   <button class="tab-btn" data-tab="tab-transparencia" data-permiso="transparencia">Transparencia</button>
   <button class="tab-btn" data-tab="tab-usuarios" data-permiso="usuarios">Administradores</button>
@@ -41,6 +42,9 @@
       <input id="nombreEscuela" placeholder="Nombre de la escuela">
       <input id="subtituloEscuela" placeholder="Subtítulo de la campaña">
       <input id="logoUrl" placeholder="URL del logo">
+      <input id="alias" placeholder="Alias para donaciones">
+      <input id="cbu" placeholder="CBU / CVU">
+      <input id="titularCuenta" placeholder="Titular de la cuenta">
       <textarea id="infoInstitucional" placeholder="Información de la escuela, historia, ubicación, necesidad de la nueva escuela, etc."></textarea>
       <button type="button" id="guardarLogoUrl">Guardar logo por URL</button>
       <button type="submit">Guardar información institucional</button>
@@ -65,6 +69,12 @@
 
     <h3>Objetivos cargados</h3>
     <div id="listaObjetivos"></div>
+  </section>
+
+  <section id="tab-donaciones" class="tab-panel" data-panel-permiso="objetivos">
+    <h2>Donaciones pendientes</h2>
+    <p class="texto-ayuda">Aprobá solo las donaciones verificadas en la cuenta bancaria o billetera virtual.</p>
+    <div id="listaDonacionesPendientes"></div>
   </section>
 
   <section id="tab-obra" class="tab-panel" data-panel-permiso="obra">
@@ -92,10 +102,8 @@
 
   <section id="tab-usuarios" class="tab-panel" data-panel-permiso="usuarios">
     <h2>Administradores y permisos</h2>
-
     <div class="nota-admin">
-      <strong>Importante:</strong> por seguridad, la contraseña la crea cada administrador desde <b>login.html</b> usando “Crear cuenta autorizada”. 
-      Desde este panel vos autorizás el correo y elegís qué bloques puede ver.
+      <strong>Importante:</strong> por seguridad, la contraseña la crea cada administrador desde <b>login.html</b> usando “Crear cuenta autorizada”.
     </div>
 
     <form id="usuarioForm" class="form-admin usuarios-form">
@@ -104,7 +112,7 @@
 
       <div class="permisos-grid">
         <label class="permiso-card"><input id="permInstitucional" type="checkbox"> <span>Información institucional</span></label>
-        <label class="permiso-card"><input id="permObjetivos" type="checkbox"> <span>Objetivos</span></label>
+        <label class="permiso-card"><input id="permObjetivos" type="checkbox"> <span>Objetivos y donaciones</span></label>
         <label class="permiso-card"><input id="permObra" type="checkbox"> <span>Actualización de obra</span></label>
         <label class="permiso-card"><input id="permTransparencia" type="checkbox"> <span>Transparencia</span></label>
       </div>
