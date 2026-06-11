@@ -11,7 +11,7 @@ body {
 }
 
 .oculto {
-  display: none;
+  display: none !important;
 }
 
 .hero {
@@ -45,10 +45,26 @@ body {
   margin-bottom: 8px;
 }
 
+.nav-publica {
+  background: white;
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.08);
+}
+
+.nav-publica a {
+  color: #0f4f2f;
+  text-decoration: none;
+  font-weight: bold;
+}
+
 .meta-general,
 .objetivos,
-.panel-config,
-.panel-objetivos {
+.seccion-publica,
+.admin-main {
   max-width: 1100px;
   margin: auto;
   padding: 28px 20px;
@@ -107,6 +123,10 @@ button:disabled {
   cursor: not-allowed;
 }
 
+.btn-danger {
+  background: #9b1c1c;
+}
+
 footer {
   background: #0f4f2f;
   color: white;
@@ -139,6 +159,37 @@ footer {
   border-radius: 12px;
 }
 
+.admin-tabs {
+  background: white;
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0,0,0,.08);
+}
+
+.tab-btn {
+  background: #e9eef3;
+  color: #123;
+}
+
+.tab-btn.activo {
+  background: #1f5a8a;
+  color: white;
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.activo {
+  display: block;
+}
+
 .form-admin {
   background: white;
   padding: 20px;
@@ -147,12 +198,22 @@ footer {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
+  margin: 15px 0 25px;
 }
 
-.form-admin input {
+.form-admin input,
+.form-admin textarea,
+.barra-admin input,
+.editor-objetivo input {
   padding: 11px;
   border: 1px solid #ccc;
   border-radius: 8px;
+  width: 100%;
+}
+
+.form-admin textarea {
+  min-height: 100px;
+  grid-column: 1 / -1;
 }
 
 .check-admin {
@@ -161,21 +222,52 @@ footer {
   gap: 8px;
 }
 
-.titulo-admin,
-#listaObjetivos {
-  max-width: 1100px;
-  margin-left: auto;
-  margin-right: auto;
-  padding: 0 20px;
+.barra-admin {
+  margin: 12px 0;
 }
 
-.ayuda {
-  margin-top: 10px;
-  font-size: 14px;
+.editor-objetivo {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.editor-objetivo h3 {
+  grid-column: 1 / -1;
+}
+
+.imagen-objetivo,
+.imagen-admin,
+.mini-card img {
+  width: 100%;
+  max-height: 230px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+
+.grilla-publica {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.texto-publico p {
+  margin: 8px 0;
+  line-height: 1.5;
+}
+
+.texto-ayuda {
   color: #444;
+  margin: 8px 0 14px;
 }
 
-@media (max-width: 700px) {
+.mini-card a {
+  color: #1f5a8a;
+  font-weight: bold;
+}
+
+@media (max-width: 800px) {
   .hero-contenido,
   .admin-header {
     flex-direction: column;
@@ -190,7 +282,9 @@ footer {
     width: 135px;
   }
 
-  .form-admin {
+  .form-admin,
+  .editor-objetivo,
+  .grilla-publica {
     grid-template-columns: 1fr;
   }
 }
