@@ -8,39 +8,48 @@
 </head>
 <body>
 
+<div id="bloqueoAdmin" class="pantalla-bloqueo">
+  <h1>Verificando acceso...</h1>
+  <p>Si no iniciaste sesión, serás redirigido al login.</p>
+</div>
+
+<div id="adminContenido" class="oculto">
+
 <header class="admin-header">
   <img id="logoAdmin" src="" alt="Logo institucional" class="logo-admin oculto">
   <div>
     <h1>Panel Administrador</h1>
     <p id="nombreEscuelaAdmin">Los Naranjos de la Concordia D-114</p>
+    <p id="usuarioActual" class="usuario-actual"></p>
   </div>
+  <button id="cerrarSesionBtn" class="btn-danger">Cerrar sesión</button>
 </header>
 
 <div class="admin-tabs">
-  <button class="tab-btn activo" data-tab="tab-config">Información institucional</button>
-  <button class="tab-btn" data-tab="tab-objetivos">Objetivos</button>
-  <button class="tab-btn" data-tab="tab-obra">Actualización de obra</button>
-  <button class="tab-btn" data-tab="tab-transparencia">Transparencia</button>
+  <button class="tab-btn activo" data-tab="tab-config" data-permiso="institucional">Información institucional</button>
+  <button class="tab-btn" data-tab="tab-objetivos" data-permiso="objetivos">Objetivos</button>
+  <button class="tab-btn" data-tab="tab-obra" data-permiso="obra">Actualización de obra</button>
+  <button class="tab-btn" data-tab="tab-transparencia" data-permiso="transparencia">Transparencia</button>
+  <button class="tab-btn" data-tab="tab-usuarios" data-permiso="usuarios">Usuarios</button>
 </div>
 
 <main class="admin-main">
 
-  <section id="tab-config" class="tab-panel activo">
+  <section id="tab-config" class="tab-panel activo" data-panel-permiso="institucional">
     <h2>Información institucional</h2>
 
     <form id="configForm" class="form-admin">
       <input id="nombreEscuela" placeholder="Nombre de la escuela">
       <input id="subtituloEscuela" placeholder="Subtítulo de la campaña">
       <input id="logoUrl" placeholder="URL del logo">
-
-      <textarea id="infoInstitucional" placeholder="Escribí información de la escuela, historia, ubicación, necesidad de la nueva escuela, cantidad de estudiantes, contexto comunitario, etc."></textarea>
+      <textarea id="infoInstitucional" placeholder="Información de la escuela, historia, ubicación, necesidad de la nueva escuela, cantidad de estudiantes, contexto comunitario, etc."></textarea>
 
       <button type="button" id="guardarLogoUrl">Guardar logo por URL</button>
       <button type="submit">Guardar información institucional</button>
     </form>
   </section>
 
-  <section id="tab-objetivos" class="tab-panel">
+  <section id="tab-objetivos" class="tab-panel" data-panel-permiso="objetivos">
     <h2>Objetivos</h2>
 
     <div class="barra-admin">
@@ -66,9 +75,8 @@
     <div id="listaObjetivos"></div>
   </section>
 
-  <section id="tab-obra" class="tab-panel">
+  <section id="tab-obra" class="tab-panel" data-panel-permiso="obra">
     <h2>Actualización de obra</h2>
-    <p class="texto-ayuda">Cargá fotos o avances de la construcción. Por ahora se recomienda pegar una URL de imagen.</p>
 
     <form id="obraForm" class="form-admin">
       <input id="obraTitulo" placeholder="Título. Ej: Colocación de aberturas">
@@ -80,9 +88,8 @@
     <div id="listaObra"></div>
   </section>
 
-  <section id="tab-transparencia" class="tab-panel">
+  <section id="tab-transparencia" class="tab-panel" data-panel-permiso="transparencia">
     <h2>Transparencia</h2>
-    <p class="texto-ayuda">Subí enlaces de facturas, presupuestos, comprobantes, fotos de compras o rendiciones.</p>
 
     <form id="transparenciaForm" class="form-admin">
       <input id="transTitulo" placeholder="Título. Ej: Factura compra de puerta">
@@ -95,7 +102,27 @@
     <div id="listaTransparenciaAdmin"></div>
   </section>
 
+  <section id="tab-usuarios" class="tab-panel" data-panel-permiso="usuarios">
+    <h2>Administradores y permisos</h2>
+    <p class="texto-ayuda">Solo el superadministrador puede ver esta sección. Agregá el correo del nuevo administrador y marcá los bloques a los que podrá acceder.</p>
+
+    <form id="usuarioForm" class="form-admin">
+      <input id="usuarioNombre" placeholder="Nombre del administrador" required>
+      <input id="usuarioEmail" type="email" placeholder="Correo electrónico" required>
+
+      <label class="check-admin"><input id="permInstitucional" type="checkbox"> Información institucional</label>
+      <label class="check-admin"><input id="permObjetivos" type="checkbox"> Objetivos</label>
+      <label class="check-admin"><input id="permObra" type="checkbox"> Actualización de obra</label>
+      <label class="check-admin"><input id="permTransparencia" type="checkbox"> Transparencia</label>
+
+      <button type="submit">Agregar administrador autorizado</button>
+    </form>
+
+    <div id="listaUsuarios"></div>
+  </section>
+
 </main>
+</div>
 
 <script type="module" src="js/admin.js"></script>
 </body>
