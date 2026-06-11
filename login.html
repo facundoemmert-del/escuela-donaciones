@@ -13,8 +13,8 @@
   <p>Los Naranjos de la Concordia D-114</p>
 
   <form id="loginForm">
-    <input id="loginEmail" type="email" placeholder="Correo electrónico" required>
-    <input id="loginPassword" type="password" placeholder="Contraseña" required>
+    <input id="loginEmail" type="email" placeholder="Correo electrónico" autocomplete="email" required>
+    <input id="loginPassword" type="password" placeholder="Contraseña" autocomplete="current-password" required>
     <button type="submit">Ingresar</button>
   </form>
 
@@ -22,6 +22,12 @@
   <button id="recuperarBtn" class="btn-link">Olvidé mi contraseña</button>
 
   <p id="loginMensaje" class="mensaje"></p>
+
+  <div class="login-ayuda">
+    <p><strong>Importante:</strong></p>
+    <p>Si ya creaste el usuario en Firebase Authentication, usá “Ingresar”.</p>
+    <p>Si el usuario no existe pero fue autorizado por Facundo, usá “Crear cuenta autorizada”.</p>
+  </div>
 </section>
 
 <script type="module" src="js/login.js"></script>
