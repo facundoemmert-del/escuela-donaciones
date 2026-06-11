@@ -7,13 +7,24 @@
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+
 <h1>Panel Administrador - Los Naranjos D-114</h1>
 
 <form id="objetivoForm">
-<input id="nombre" placeholder="Nombre del objetivo" required>
-<input id="precio" type="number" placeholder="Precio" required>
-<input id="recaudado" type="number" placeholder="Recaudado" required>
-<button type="submit">Agregar Objetivo</button>
+  <input id="nombre" placeholder="Nombre del objetivo" required>
+
+  <textarea id="descripcion" placeholder="Descripción del objetivo. Ej: Puerta principal para el aula nueva" rows="3"></textarea>
+
+  <input id="precio" type="number" placeholder="Precio total del objetivo" required>
+
+  <input id="recaudado" type="number" placeholder="Monto ya recaudado" value="0" required>
+
+  <label>
+    <input id="urgente" type="checkbox">
+    Marcar como urgente
+  </label>
+
+  <button type="submit">Agregar Objetivo</button>
 </form>
 
 <h2>Objetivos cargados</h2>
