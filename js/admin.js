@@ -15,6 +15,8 @@ const SUPERADMIN_UID = "IArWgSKZF4a8eu0j3eoWS4el2P02";
 
 let usuarioActualData = null;
 let objetivosCache = [];
+let adminsCreados = {};
+let adminsAutorizados = {};
 
 const formatoPesos = new Intl.NumberFormat("es-AR", {
   style: "currency",
@@ -403,6 +405,22 @@ window.eliminarTransparencia = async id => {
   await deleteDoc(doc(db, "transparencia", id));
 };
 
+function permisosComoTexto(permisos = {}) {
+  const nombres = {
+    institucional: "Información institucional",
+    objetivos: "Objetivos",
+    obra: "Actualización de obra",
+    transparencia: "Transparencia",
+    usuarios: "Administradores"
+  };
+
+  const activos = Object.entries(permisos)
+    .filter(([k, v]) => v)
+    .map(([k]) => nombres[k] || k);
+
+  return activos.length ? activos.join(", ") : "Sin permisos asignados";
+}
+
 function iniciarUsuarios() {
   if (!tienePermiso("usuarios")) return;
 
@@ -435,24 +453,108 @@ function iniciarUsuarios() {
     alert("Administrador autorizado. Ahora esa persona entra a login.html y toca Crear cuenta autorizada.");
   });
 
-  onSnapshot(query(collection(db, "adminsByEmail")), snapshot => {
-    lista.innerHTML = "";
+  onSnapshot(query(collection(db, "admins")), snapshot => {
+    adminsCreados = {};
     snapshot.forEach(d => {
       const u = d.data();
-      const div = document.createElement("div");
-      div.className = "card";
-      div.innerHTML = `
-        <h3>${u.nombre || "Sin nombre"}</h3>
-        <p>${u.email}</p>
-        <p>Estado: ${u.activo ? "Activo" : "Bloqueado"}</p>
-        <p>Permisos: ${Object.entries(u.permisos || {}).filter(([k,v]) => v).map(([k]) => k).join(", ") || "Sin permisos"}</p>
-        <button onclick="cambiarEstadoAdmin('${d.id}', ${u.activo ? "false" : "true"})">${u.activo ? "Bloquear" : "Activar"}</button>
-      `;
-      lista.appendChild(div);
+      if (u.email) adminsCreados[u.email.toLowerCase()] = { id: d.id, ...u };
     });
+    renderAdmins();
+  });
+
+  onSnapshot(query(collection(db, "adminsByEmail")), snapshot => {
+    adminsAutorizados = {};
+    snapshot.forEach(d => {
+      const u = d.data();
+      if (u.email) adminsAutorizados[u.email.toLowerCase()] = { id: d.id, ...u };
+    });
+    renderAdmins();
   });
 }
 
-window.cambiarEstadoAdmin = async (id, estado) => {
-  await updateDoc(doc(db, "adminsByEmail", id), { activo: estado });
+function renderAdmins() {
+  const lista = document.getElementById("listaUsuarios");
+  if (!lista) return;
+
+  const emails = new Set([
+    ...Object.keys(adminsAutorizados),
+    ...Object.keys(adminsCreados)
+  ]);
+
+  lista.innerHTML = "";
+
+  emails.forEach(email => {
+    const autorizado = adminsAutorizados[email];
+    const creado = adminsCreados[email];
+    const data = creado || autorizado;
+
+    const esSuper = data.rol === "superadmin" || email === SUPERADMIN_EMAIL;
+    const permisos = data.permisos || {};
+    const estado = data.activo !== false;
+
+    const div = document.createElement("div");
+    div.className = "admin-card";
+
+    div.innerHTML = `
+      <div>
+        <h3>${data.nombre || "Sin nombre"}</h3>
+        <p><strong>Correo:</strong> ${email}</p>
+        <p><strong>Rol:</strong> ${esSuper ? "Superadministrador" : "Administrador"}</p>
+        <p><strong>Estado:</strong> ${estado ? "Activo" : "Bloqueado"}</p>
+        <p><strong>Cuenta:</strong> ${creado ? "Creada en Authentication" : "Autorizada, pendiente de crear cuenta"}</p>
+        <p><strong>Permisos:</strong> ${esSuper ? "Acceso total" : permisosComoTexto(permisos)}</p>
+      </div>
+
+      <div class="admin-actions">
+        ${!esSuper ? `<button onclick="editarPermisosAdmin('${email}')">Editar permisos</button>` : ""}
+        ${!esSuper ? `<button class="btn-danger" onclick="cambiarEstadoAdmin('${email}', ${estado ? "false" : "true"})">${estado ? "Bloquear" : "Activar"}</button>` : ""}
+      </div>
+
+      ${!esSuper ? `
+        <div id="edit-admin-${email.replaceAll("@", "_").replaceAll(".", "_")}" class="admin-edit oculto">
+          <label><input type="checkbox" id="edit-${email}-institucional" ${permisos.institucional ? "checked" : ""}> Información institucional</label>
+          <label><input type="checkbox" id="edit-${email}-objetivos" ${permisos.objetivos ? "checked" : ""}> Objetivos</label>
+          <label><input type="checkbox" id="edit-${email}-obra" ${permisos.obra ? "checked" : ""}> Actualización de obra</label>
+          <label><input type="checkbox" id="edit-${email}-transparencia" ${permisos.transparencia ? "checked" : ""}> Transparencia</label>
+          <button onclick="guardarPermisosAdmin('${email}')">Guardar permisos</button>
+        </div>
+      ` : ""}
+    `;
+
+    lista.appendChild(div);
+  });
+}
+
+window.cambiarEstadoAdmin = async (email, estado) => {
+  await setDoc(doc(db, "adminsByEmail", email), { activo: estado }, { merge: true });
+};
+
+window.editarPermisosAdmin = (email) => {
+  const id = "edit-admin-" + email.replaceAll("@", "_").replaceAll(".", "_");
+  document.getElementById(id).classList.toggle("oculto");
+};
+
+window.guardarPermisosAdmin = async (email) => {
+  const permisos = {
+    institucional: document.getElementById(`edit-${email}-institucional`).checked,
+    objetivos: document.getElementById(`edit-${email}-objetivos`).checked,
+    obra: document.getElementById(`edit-${email}-obra`).checked,
+    transparencia: document.getElementById(`edit-${email}-transparencia`).checked,
+    usuarios: false
+  };
+
+  await setDoc(doc(db, "adminsByEmail", email), {
+    permisos,
+    actualizado: serverTimestamp()
+  }, { merge: true });
+
+  const creado = adminsCreados[email];
+  if (creado && creado.id) {
+    await setDoc(doc(db, "admins", creado.id), {
+      permisos,
+      actualizado: serverTimestamp()
+    }, { merge: true });
+  }
+
+  alert("Permisos actualizados.");
 };
