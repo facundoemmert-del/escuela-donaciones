@@ -6,8 +6,7 @@ body{font-family:Arial,sans-serif;background:#f1f4f7;color:#111}
 .login-card input{width:100%;padding:12px;margin:8px 0;border:1px solid #ccc;border-radius:8px}
 .mensaje{margin-top:10px;color:#9b1c1c;font-weight:bold}
 .pantalla-bloqueo{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px}
-.hero,.admin-header{background:linear-gradient(135deg,#0f4f2f,#1f5a8a);color:white;padding:25px}
-.admin-header{display:flex;align-items:center;gap:18px;justify-content:space-between;flex-wrap:wrap}
+.admin-header{background:linear-gradient(135deg,#0f4f2f,#1f5a8a);color:white;padding:25px;display:flex;align-items:center;gap:18px;justify-content:space-between;flex-wrap:wrap}
 .logo-admin{width:95px;background:white;padding:8px;border-radius:12px}.usuario-actual{font-size:14px;opacity:.9}
 .admin-tabs{background:white;display:flex;gap:8px;padding:12px;justify-content:center;flex-wrap:wrap;position:sticky;top:0;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,.08)}
 .tab-btn{background:#e9eef3;color:#123}.tab-btn.activo{background:#1f5a8a;color:white}
