@@ -18,6 +18,22 @@ const formatoPesos = new Intl.NumberFormat("es-AR", {
   maximumFractionDigits: 0
 });
 
+function activarSeccionesPublicas() {
+  const botones = document.querySelectorAll(".public-tab-btn");
+  const paneles = document.querySelectorAll(".public-panel");
+
+  botones.forEach(boton => {
+    boton.addEventListener("click", () => {
+      botones.forEach(b => b.classList.remove("activo"));
+      paneles.forEach(p => p.classList.remove("activo"));
+
+      boton.classList.add("activo");
+      document.getElementById(boton.dataset.publicTab).classList.add("activo");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  });
+}
+
 function calcularPorcentaje(recaudado, precio) {
   if (!precio || precio <= 0) return 0;
   return Math.min(100, Math.round((recaudado / precio) * 100));
@@ -25,10 +41,7 @@ function calcularPorcentaje(recaudado, precio) {
 
 function textoAHtml(texto) {
   if (!texto) return "";
-  return texto
-    .split("\n")
-    .map(linea => `<p>${linea}</p>`)
-    .join("");
+  return texto.split("\\n").map(linea => `<p>${linea}</p>`).join("");
 }
 
 function cargarConfiguracion() {
@@ -39,25 +52,25 @@ function cargarConfiguracion() {
 
     const data = documento.data();
 
-    const nombre = data.nombreEscuela || "Los Naranjos de la Concordia D-114";
-    const subtitulo = data.subtitulo || "Campaña para la construcción de nuestra nueva escuela";
-    const logoUrl = data.logoUrl || "";
-    const info = data.infoInstitucional || "";
+    document.getElementById("nombreEscuelaPublico").textContent =
+      data.nombreEscuela || "Los Naranjos de la Concordia D-114";
 
-    document.getElementById("nombreEscuelaPublico").textContent = nombre;
-    document.getElementById("subtituloPublico").textContent = subtitulo;
+    document.getElementById("subtituloPublico").textContent =
+      data.subtitulo || "Campaña para la construcción de nuestra nueva escuela";
 
     const infoPublica = document.getElementById("infoInstitucionalPublica");
     if (infoPublica) {
-      infoPublica.innerHTML = info ? textoAHtml(info) : "<p>Próximamente se publicará información institucional.</p>";
+      infoPublica.innerHTML = data.infoInstitucional
+        ? textoAHtml(data.infoInstitucional)
+        : "<p>Próximamente se publicará información institucional.</p>";
     }
 
     const logoPublico = document.getElementById("logoPublico");
     const logoFooter = document.getElementById("logoFooter");
 
-    if (logoUrl) {
-      logoPublico.src = logoUrl;
-      logoFooter.src = logoUrl;
+    if (data.logoUrl) {
+      logoPublico.src = data.logoUrl;
+      logoFooter.src = data.logoUrl;
       logoPublico.classList.remove("oculto");
       logoFooter.classList.remove("oculto");
     }
@@ -66,7 +79,6 @@ function cargarConfiguracion() {
 
 function renderizarObjetivos(objetivos) {
   const contenedor = document.querySelector(".objetivos");
-
   if (!contenedor) return;
 
   contenedor.querySelectorAll(".card").forEach(card => card.remove());
@@ -85,13 +97,12 @@ function renderizarObjetivos(objetivos) {
     const porcentaje = calcularPorcentaje(recaudadoVisible, precio);
     const faltante = Math.max(0, precio - recaudadoVisible);
     const completado = porcentaje >= 100;
-    const imagenUrl = objetivo.imagenUrl || "";
 
     const card = document.createElement("div");
     card.className = "card objetivo-card";
 
     card.innerHTML = `
-      ${imagenUrl ? `<img class="imagen-objetivo" src="${imagenUrl}" alt="${objetivo.nombre || "Objetivo"}">` : ""}
+      ${objetivo.imagenUrl ? `<img class="imagen-objetivo" src="${objetivo.imagenUrl}" alt="${objetivo.nombre || "Objetivo"}">` : ""}
       <div class="card-header">
         <div>
           <h3>${objetivo.nombre || "Objetivo sin nombre"}</h3>
@@ -122,11 +133,9 @@ function renderizarObjetivos(objetivos) {
 function actualizarMetaGeneral(totalRecaudado, totalMeta) {
   const barraGeneral = document.querySelector(".meta-general .progreso");
   const textoGeneral = document.querySelector(".meta-general p");
-
   if (!barraGeneral || !textoGeneral) return;
 
   const porcentajeGeneral = calcularPorcentaje(totalRecaudado, totalMeta);
-
   barraGeneral.style.width = porcentajeGeneral + "%";
   textoGeneral.textContent =
     `${formatoPesos.format(totalRecaudado)} recaudados de ${formatoPesos.format(totalMeta)} (${porcentajeGeneral}%)`;
@@ -180,6 +189,7 @@ function renderizarTransparencia(items) {
   });
 }
 
+activarSeccionesPublicas();
 cargarConfiguracion();
 
 onSnapshot(query(collection(db, "objetivos")), snapshot => {
