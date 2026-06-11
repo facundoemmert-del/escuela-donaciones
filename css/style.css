@@ -525,3 +525,57 @@ button:disabled {
     min-width: auto;
   }
 }
+
+
+/* ZIP 16 - Modal de donación */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+}
+
+.modal-card {
+  background: white;
+  width: 95%;
+  max-width: 560px;
+  padding: 24px;
+  border-radius: 18px;
+  box-shadow: 0 12px 35px rgba(0,0,0,.35);
+  position: relative;
+}
+
+.modal-cerrar {
+  position: absolute;
+  right: 12px;
+  top: 10px;
+  background: #9b1c1c;
+  padding: 6px 12px;
+}
+
+.datos-transferencia {
+  background: #f4f7fa;
+  border-left: 5px solid #1f5a8a;
+  border-radius: 12px;
+  padding: 14px;
+  margin: 15px 0;
+}
+
+#donacionForm {
+  display: grid;
+  gap: 10px;
+}
+
+#donacionForm input {
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+#listaDonacionesPendientes .admin-card {
+  border-left-color: #d98c00;
+}
