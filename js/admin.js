@@ -46,7 +46,7 @@ form.addEventListener("submit", async (e) => {
   form.reset();
 });
 
-const q = query(collection(db, "objetivos"), orderBy("creado", "desc"));
+const q = query(collection(db, "objetivos"));
 
 onSnapshot(q, snapshot => {
   lista.innerHTML = "";
