@@ -65,3 +65,42 @@ footer{background:#0f4f2f;color:white;text-align:center;padding:22px;margin-top:
 .editor-objetivo{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px;background:#f4f7fa;padding:15px;border-radius:12px}
 @media(max-width:900px){#listaUsuarios,.permisos-grid,.stats-donaciones{grid-template-columns:1fr}}
 @media(max-width:800px){.admin-header{flex-direction:column;text-align:center}.form-admin,.grilla-publica,.admin-edit,.editor-objetivo{grid-template-columns:1fr}.form-admin button{width:100%;min-width:auto}}
+
+/* ZIP 27 - Donaciones en dos columnas + buscador */
+.donaciones-admin-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+  align-items: start;
+  margin-top: 18px;
+}
+
+.donaciones-columna {
+  min-width: 0;
+}
+
+.buscador-historial {
+  margin: 0 0 12px 0;
+  background: white;
+}
+
+#listaDonacionesPendientes,
+#historialDonacionesAdmin {
+  display: grid;
+  gap: 14px;
+}
+
+#listaDonacionesPendientes .admin-card,
+#historialDonacionesAdmin .historial-item {
+  margin: 0;
+}
+
+#historialDonacionesAdmin .historial-item {
+  line-height: 1.45;
+}
+
+@media(max-width: 900px) {
+  .donaciones-admin-grid {
+    grid-template-columns: 1fr;
+  }
+}
