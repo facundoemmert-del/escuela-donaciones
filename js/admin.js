@@ -181,6 +181,10 @@ function objetivos(){
   bus.oninput=renderObjetivos;
 }
 
+function limpiarTexto(valor){
+  return String(valor||"").replaceAll('"',"&quot;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+}
+
 function renderObjetivos(){
   const l=document.getElementById("listaObjetivos");
   const bus=document.getElementById("buscadorObjetivos");
@@ -195,27 +199,48 @@ function renderObjetivos(){
       const precio=Number(o.precio||0);
       const rec=Math.min(Number(o.recaudado||0),precio);
       const faltante=Math.max(0,precio-rec);
+      const completado=precio>0&&rec>=precio;
+      const porcentaje=precio>0?Math.min(100,Math.round((rec/precio)*100)):0;
 
       const div=document.createElement("div");
       div.className="card";
       div.innerHTML=`
-        ${o.imagenUrl?`<img class="imagen-admin" src="${o.imagenUrl}" alt="${o.nombre||"Objetivo"}">`:""}
+        ${o.imagenUrl?`<img class="imagen-admin" src="${limpiarTexto(o.imagenUrl)}" alt="${limpiarTexto(o.nombre)||"Objetivo"}">`:""}
         <h3>${o.nombre||"Sin nombre"}</h3>
         <p>${o.descripcion||"Sin descripción"}</p>
+        <div class="barra"><div class="progreso" style="width:${porcentaje}%"></div></div>
         <p><strong>Precio:</strong> ${formatoPesos.format(precio)}</p>
         <p><strong>Recaudado:</strong> ${formatoPesos.format(rec)}</p>
         <p><strong>Faltante:</strong> ${formatoPesos.format(faltante)}</p>
-        <button onclick="mostrarEditorObjetivo('${o.id}')">Editar</button>
+        <p>${completado?"✅ Objetivo completado":"Objetivo abierto"}</p>
+
+        <button onclick="mostrarEditorObjetivo('${o.id}')">Editar datos</button>
         <button class="btn-danger" onclick="eliminarObjetivo('${o.id}')">Eliminar</button>
 
         <div id="editor-objetivo-${o.id}" class="editor-objetivo oculto">
-          <input id="edit-nombre-${o.id}" value="${o.nombre||""}" placeholder="Nombre">
-          <input id="edit-descripcion-${o.id}" value="${o.descripcion||""}" placeholder="Descripción">
+          <h3>Editar objetivo</h3>
+
+          <label>Nombre</label>
+          <input id="edit-nombre-${o.id}" value="${limpiarTexto(o.nombre)}" placeholder="Nombre">
+
+          <label>Descripción</label>
+          <input id="edit-descripcion-${o.id}" value="${limpiarTexto(o.descripcion)}" placeholder="Descripción">
+
+          <label>Precio actualizado</label>
           <input id="edit-precio-${o.id}" type="number" value="${precio}" placeholder="Precio">
-          <input id="edit-recaudado-${o.id}" type="number" value="${rec}" placeholder="Recaudado">
-          <input id="edit-imagen-${o.id}" value="${o.imagenUrl||""}" placeholder="URL de imagen">
-          <label><input id="edit-urgente-${o.id}" type="checkbox" ${o.urgente?"checked":""}> Urgente</label>
+
+          <label>URL de imagen</label>
+          <input id="edit-imagen-${o.id}" value="${limpiarTexto(o.imagenUrl)}" placeholder="URL de imagen">
+
+          <label><input id="edit-urgente-${o.id}" type="checkbox" ${o.urgente?"checked":""}> Marcar como urgente</label>
+
+          <div class="campo-completo">
+            <p><strong>Recaudado:</strong> ${formatoPesos.format(rec)} — este dato no se edita manualmente.</p>
+            <p><strong>Faltante actual:</strong> ${formatoPesos.format(faltante)}</p>
+          </div>
+
           <button onclick="guardarObjetivo('${o.id}')">Guardar cambios</button>
+          <button onclick="mostrarEditorObjetivo('${o.id}')">Cancelar</button>
         </div>
       `;
       l.appendChild(div);
@@ -227,20 +252,30 @@ window.mostrarEditorObjetivo=id=>{
 };
 
 window.guardarObjetivo=async id=>{
-  const precio=Number(document.getElementById("edit-precio-"+id).value);
-  const rec=Number(document.getElementById("edit-recaudado-"+id).value);
+  const objetivo=objetivosCache.find(o=>o.id===id);
+  const recaudadoActual=Number(objetivo?.recaudado||0);
+  const precioNuevo=Number(document.getElementById("edit-precio-"+id).value);
+
+  if(!precioNuevo||precioNuevo<=0){
+    alert("El precio debe ser mayor a 0.");
+    return;
+  }
+
+  if(precioNuevo<recaudadoActual){
+    alert("El precio no puede ser menor a lo ya recaudado.");
+    return;
+  }
 
   await updateDoc(doc(db,"objetivos",id),{
     nombre:document.getElementById("edit-nombre-"+id).value.trim(),
     descripcion:document.getElementById("edit-descripcion-"+id).value.trim(),
-    precio,
-    recaudado:Math.min(rec,precio),
+    precio:precioNuevo,
     imagenUrl:document.getElementById("edit-imagen-"+id).value.trim(),
     urgente:document.getElementById("edit-urgente-"+id).checked,
     actualizado:serverTimestamp()
   });
 
-  alert("Objetivo actualizado.");
+  alert("Objetivo actualizado. No se modificó lo recaudado.");
 };
 
 window.eliminarObjetivo=async id=>{
