@@ -374,16 +374,59 @@ function obra(){
     l.innerHTML="";
     s.forEach(d=>{
       const x=d.data();
-      l.innerHTML+=`
-        <div class="card">
+      const id=d.id;
+
+      const div=document.createElement("div");
+      div.className="card";
+      div.innerHTML=`
+        <div id="vista-obra-${id}">
           ${x.imagenUrl?`<img class="imagen-admin" src="${x.imagenUrl}">`:""}
           <h3>${x.titulo||"Obra"}</h3>
           <p>${x.descripcion||""}</p>
+          <button onclick="mostrarEditorObra('${id}')">Editar</button>
+          <button class="btn-danger" onclick="eliminarObra('${id}')">Eliminar</button>
+        </div>
+
+        <div id="editor-obra-${id}" class="editor-objetivo oculto">
+          <h3>Editar actualización de obra</h3>
+
+          <label>Título</label>
+          <input id="edit-obra-titulo-${id}" value="${limpiarTexto(x.titulo||"")}" placeholder="Título">
+
+          <label>URL de foto</label>
+          <input id="edit-obra-imagen-${id}" value="${limpiarTexto(x.imagenUrl||"")}" placeholder="URL de foto">
+
+          <label>Descripción</label>
+          <textarea id="edit-obra-descripcion-${id}" placeholder="Descripción">${x.descripcion||""}</textarea>
+
+          <button onclick="guardarObra('${id}')">Guardar cambios</button>
+          <button onclick="mostrarEditorObra('${id}')">Cancelar</button>
         </div>
       `;
+      l.appendChild(div);
     });
   });
 }
+
+window.mostrarEditorObra=id=>{
+  document.getElementById("editor-obra-"+id).classList.toggle("oculto");
+};
+
+window.guardarObra=async id=>{
+  await updateDoc(doc(db,"obra",id),{
+    titulo:document.getElementById("edit-obra-titulo-"+id).value.trim(),
+    imagenUrl:document.getElementById("edit-obra-imagen-"+id).value.trim(),
+    descripcion:document.getElementById("edit-obra-descripcion-"+id).value.trim(),
+    actualizado:serverTimestamp()
+  });
+  alert("Actualización de obra editada.");
+};
+
+window.eliminarObra=async id=>{
+  if(confirm("¿Eliminar esta actualización de obra?")){
+    await deleteDoc(doc(db,"obra",id));
+  }
+};
 
 function transparencia(){
   if(!tienePermiso("transparencia")) return;
