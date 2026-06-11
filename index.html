@@ -20,7 +20,9 @@
 </section>
 
 <section id="public-institucional" class="public-panel"><div class="seccion-publica"><h2>Información institucional</h2><div id="infoInstitucionalPublica" class="texto-publico"><p>La información institucional aparecerá aquí cuando se cargue desde el panel administrador.</p></div></div></section>
+
 <section id="public-obra" class="public-panel"><div class="seccion-publica"><h2>Actualización de obra</h2><div id="galeriaObra" class="grilla-publica"></div></div></section>
+
 <section id="public-transparencia" class="public-panel"><div class="seccion-publica"><h2>Transparencia</h2><p class="texto-ayuda">Comprobantes, facturas, presupuestos y rendiciones vinculadas al uso de las donaciones.</p><div id="listaTransparencia" class="grilla-publica"></div></div></section>
 
 <section id="public-donaciones" class="public-panel">
@@ -55,19 +57,30 @@
     </div>
 
     <form id="donacionForm">
-      <label>Nombre y apellido del donante *</label>
-      <input id="donanteNombre" placeholder="Ej: Juan Pérez" required>
+      <label>Nombre *</label>
+      <input id="donanteNombre" placeholder="Ej: Juan" required>
+
+      <label>Apellido *</label>
+      <input id="donanteApellido" placeholder="Ej: Pérez" required>
+
+      <label>DNI *</label>
+      <input id="donanteDni" inputmode="numeric" placeholder="Ej: 32123456" required>
 
       <label>Monto transferido *</label>
       <input id="donacionMonto" type="number" placeholder="Ej: 5000" required>
 
-      <label>Subir comprobante *</label>
-      <input id="donacionComprobanteArchivo" type="file" accept="image/*,.pdf,application/pdf" required>
-      <p class="texto-ayuda">Podés subir una foto, captura o PDF del comprobante. Tamaño máximo recomendado: 5 MB.</p>
+      <label>Número de comprobante / referencia (opcional)</label>
+      <input id="numeroComprobante" placeholder="Ej: 123456789">
 
-      <button id="enviarDonacionBtn" type="submit">Enviar comprobante para revisión</button>
+      <label class="check-admin">
+        <input id="declaraTransferencia" type="checkbox" required>
+        Declaro haber realizado la transferencia.
+      </label>
+
+      <button type="submit">Enviar para verificación</button>
     </form>
-    <p class="texto-ayuda">La barra se actualiza recién cuando un administrador verifica y aprueba el comprobante.</p>
+
+    <p class="texto-ayuda">La donación será acreditada cuando el equipo administrador verifique el ingreso.</p>
   </div>
 </div>
 
