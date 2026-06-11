@@ -91,7 +91,7 @@ function actualizarMetaGeneral(totalRecaudado, totalMeta) {
     `${formatoPesos.format(totalRecaudado)} recaudados de ${formatoPesos.format(totalMeta)} (${porcentajeGeneral}%)`;
 }
 
-const q = query(collection(db, "objetivos"), orderBy("creado", "desc"));
+const q = query(collection(db, "objetivos"));
 
 onSnapshot(q, snapshot => {
   const objetivos = [];
