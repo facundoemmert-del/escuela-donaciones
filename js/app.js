@@ -3,7 +3,8 @@ import {
   getFirestore,
   collection,
   onSnapshot,
-  query
+  query,
+  doc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 import { firebaseConfig } from "./firebase-config.js";
@@ -20,6 +21,33 @@ const formatoPesos = new Intl.NumberFormat("es-AR", {
 function calcularPorcentaje(recaudado, precio) {
   if (!precio || precio <= 0) return 0;
   return Math.min(100, Math.round((recaudado / precio) * 100));
+}
+
+function cargarConfiguracion() {
+  const ref = doc(db, "configuracion", "sitio");
+
+  onSnapshot(ref, documento => {
+    if (!documento.exists()) return;
+
+    const data = documento.data();
+
+    const nombre = data.nombreEscuela || "Los Naranjos de la Concordia D-114";
+    const subtitulo = data.subtitulo || "Campaña para la construcción de nuestra nueva escuela";
+    const logoUrl = data.logoUrl || "";
+
+    document.getElementById("nombreEscuelaPublico").textContent = nombre;
+    document.getElementById("subtituloPublico").textContent = subtitulo;
+
+    const logoPublico = document.getElementById("logoPublico");
+    const logoFooter = document.getElementById("logoFooter");
+
+    if (logoUrl) {
+      logoPublico.src = logoUrl;
+      logoFooter.src = logoUrl;
+      logoPublico.classList.remove("oculto");
+      logoFooter.classList.remove("oculto");
+    }
+  });
 }
 
 function renderizarObjetivos(objetivos) {
@@ -90,6 +118,8 @@ function actualizarMetaGeneral(totalRecaudado, totalMeta) {
   textoGeneral.textContent =
     `${formatoPesos.format(totalRecaudado)} recaudados de ${formatoPesos.format(totalMeta)} (${porcentajeGeneral}%)`;
 }
+
+cargarConfiguracion();
 
 const q = query(collection(db, "objetivos"));
 
