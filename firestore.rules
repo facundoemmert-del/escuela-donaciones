@@ -8,34 +8,49 @@ service cloud.firestore {
     }
 
     function isSuperAdmin() {
-      return signedIn() && request.auth.token.email == "facundoemmert@gmail.com";
+      return signedIn() &&
+        (request.auth.uid == "IArWgSKZF4a8eu0j3eoWS4el2P02" ||
+         request.auth.token.email == "facundoemmert@gmail.com");
     }
 
-    function emailId() {
-      return request.auth.token.email
-        .lower()
-        .replace('.', '_')
-        .replace('#', '_')
-        .replace('$', '_')
-        .replace('[', '_')
-        .replace(']', '_')
-        .replace('/', '_');
+    function adminByUid() {
+      return get(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
-    function userDoc() {
-      return get(/databases/$(database)/documents/usuarios/$(emailId()));
+    function adminByEmail() {
+      return get(/databases/$(database)/documents/adminsByEmail/$(request.auth.token.email));
     }
 
     function isActiveAdmin() {
       return isSuperAdmin() ||
         (signedIn() &&
-        exists(/databases/$(database)/documents/usuarios/$(emailId())) &&
-        userDoc().data.activo == true);
+          (
+            exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+            adminByUid().data.activo == true
+          )
+        ) ||
+        (signedIn() &&
+          (
+            exists(/databases/$(database)/documents/adminsByEmail/$(request.auth.token.email)) &&
+            adminByEmail().data.activo == true
+          )
+        );
     }
 
     function hasPermission(p) {
       return isSuperAdmin() ||
-        (isActiveAdmin() && userDoc().data.permisos[p] == true);
+        (
+          signedIn() &&
+          exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+          adminByUid().data.activo == true &&
+          adminByUid().data.permisos[p] == true
+        ) ||
+        (
+          signedIn() &&
+          exists(/databases/$(database)/documents/adminsByEmail/$(request.auth.token.email)) &&
+          adminByEmail().data.activo == true &&
+          adminByEmail().data.permisos[p] == true
+        );
     }
 
     match /objetivos/{id} {
@@ -58,8 +73,13 @@ service cloud.firestore {
       allow write: if hasPermission("transparencia");
     }
 
-    match /usuarios/{id} {
+    match /admins/{id} {
       allow read: if isActiveAdmin();
+      allow write: if isSuperAdmin();
+    }
+
+    match /adminsByEmail/{email} {
+      allow read: if isActiveAdmin() || (signedIn() && request.auth.token.email == email);
       allow write: if isSuperAdmin();
     }
   }
