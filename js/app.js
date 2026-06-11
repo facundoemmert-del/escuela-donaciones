@@ -11,6 +11,20 @@ const formatoPesos = new Intl.NumberFormat("es-AR", { style: "currency", currenc
 function calcularPorcentaje(r, p) { if (!p || p <= 0) return 0; return Math.min(100, Math.round((r / p) * 100)); }
 function textoAHtml(t) { if (!t) return ""; return t.split("\n").map(l => `<p>${l}</p>`).join(""); }
 
+function formatearFechaPublica(valor){
+  if(!valor) return "sin fecha";
+  let fecha=null;
+  if(valor.toDate) fecha=valor.toDate();
+  else if(valor.seconds) fecha=new Date(valor.seconds*1000);
+  else fecha=new Date(valor);
+  if(isNaN(fecha.getTime())) return "sin fecha";
+  return fecha.toLocaleDateString("es-AR");
+}
+
+function nombreOculto(){
+  return "********";
+}
+
 document.querySelectorAll(".public-tab-btn").forEach(b => b.addEventListener("click", () => {
   document.querySelectorAll(".public-tab-btn").forEach(x => x.classList.remove("activo"));
   document.querySelectorAll(".public-panel").forEach(p => p.classList.remove("activo"));
@@ -161,7 +175,7 @@ function renderDonacionesPublicas(donaciones) {
   historial.innerHTML = aprobadas.length ? "" : "<p>Todavía no hay donaciones aprobadas.</p>";
   aprobadas.slice().reverse().forEach(d => {
     const nombre = d.nombreCompletoDonante || `${d.nombreDonante || ""} ${d.apellidoDonante || ""}`.trim() || "Donante";
-    historial.innerHTML += `<div class="historial-item"><strong>${nombre}</strong> donó ${formatoPesos.format(Number(d.monto || 0))} para <strong>${d.objetivoNombre}</strong></div>`;
+    historial.innerHTML += `<div class="historial-item"><strong>${nombreOculto()}</strong> donó ${formatoPesos.format(Number(d.monto || 0))} para <strong>${d.objetivoNombre}</strong><br>Fecha: ${formatearFechaPublica(d.aprobado || d.creado)}</div>`;
   });
 }
 

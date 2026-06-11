@@ -14,8 +14,54 @@ let usuarioActualData=null;
 let objetivosCache=[];
 let adminsCreados={};
 let adminsAutorizados={};
+let donacionesAprobadasCache=[];
 
 const formatoPesos=new Intl.NumberFormat("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0});
+
+function formatearFecha(valor){
+  if(!valor) return "Sin fecha";
+  let fecha=null;
+  if(valor.toDate) fecha=valor.toDate();
+  else if(valor.seconds) fecha=new Date(valor.seconds*1000);
+  else fecha=new Date(valor);
+  if(isNaN(fecha.getTime())) return "Sin fecha";
+  return fecha.toLocaleDateString("es-AR");
+}
+
+function renderHistorialDonacionesAdmin(){
+  const hist=document.getElementById("historialDonacionesAdmin");
+  const buscador=document.getElementById("buscadorHistorialDonaciones");
+  if(!hist) return;
+
+  const q=(buscador?.value||"").trim().toLowerCase();
+  hist.innerHTML="";
+
+  const filtradas=donacionesAprobadasCache.filter(x=>{
+    const nombre=x.nombreCompletoDonante || `${x.nombreDonante||""} ${x.apellidoDonante||""}`.trim() || "Donante";
+    const texto=`${nombre} ${x.dniDonante||""} ${x.objetivoNombre||""} ${x.numeroComprobante||""}`.toLowerCase();
+    return texto.includes(q);
+  });
+
+  if(!filtradas.length){
+    hist.innerHTML="<p>No hay donaciones aprobadas que coincidan con la búsqueda.</p>";
+    return;
+  }
+
+  filtradas.forEach(x=>{
+    const nombre=x.nombreCompletoDonante || `${x.nombreDonante||""} ${x.apellidoDonante||""}`.trim() || "Donante";
+    const fecha=formatearFecha(x.aprobado || x.creado);
+    hist.innerHTML += `
+      <div class="historial-item">
+        <strong>${nombre}</strong><br>
+        DNI: ${x.dniDonante||"sin cargar"}<br>
+        Donó ${formatoPesos.format(Number(x.monto||0))} para <strong>${x.objetivoNombre}</strong><br>
+        Fecha: ${fecha}
+        ${x.numeroComprobante?`<br>Ref.: ${x.numeroComprobante}`:""}
+      </div>
+    `;
+  });
+}
+
 
 function tienePermiso(p){
   return usuarioActualData&&(usuarioActualData.rol==="superadmin"||(usuarioActualData.permisos&&usuarioActualData.permisos[p]===true));
@@ -319,7 +365,12 @@ function donaciones(){
 
   const pendientes=document.getElementById("listaDonacionesPendientes");
   const hist=document.getElementById("historialDonacionesAdmin");
+  const buscador=document.getElementById("buscadorHistorialDonaciones");
   if(!pendientes) return;
+
+  if(buscador){
+    buscador.addEventListener("input", renderHistorialDonacionesAdmin);
+  }
 
   onSnapshot(query(collection(db,"donaciones")),s=>{
     let ap=0;
@@ -327,7 +378,7 @@ function donaciones(){
     const donantes=new Set();
 
     pendientes.innerHTML="";
-    hist.innerHTML="";
+    donacionesAprobadasCache=[];
 
     s.forEach(d=>{
       const x=d.data();
@@ -336,12 +387,7 @@ function donaciones(){
       if(x.estado==="aprobada"){
         ap++;
         donantes.add((x.dniDonante||nombre).trim().toLowerCase());
-        hist.innerHTML=`
-          <div class="historial-item">
-            <strong>${nombre}</strong> - DNI ${x.dniDonante||"sin cargar"} - donó ${formatoPesos.format(Number(x.monto||0))} para <strong>${x.objetivoNombre}</strong>
-            ${x.numeroComprobante?` - Ref.: ${x.numeroComprobante}`:""}
-          </div>
-        `+hist.innerHTML;
+        donacionesAprobadasCache.push({id:d.id,...x});
       }
 
       if(x.estado==="pendiente"){
@@ -368,12 +414,18 @@ function donaciones(){
       }
     });
 
+    donacionesAprobadasCache.sort((a,b)=>{
+      const fa=(a.aprobado?.seconds || a.creado?.seconds || 0);
+      const fb=(b.aprobado?.seconds || b.creado?.seconds || 0);
+      return fb-fa;
+    });
+
     document.getElementById("adminDonantes").textContent=donantes.size;
     document.getElementById("adminAprobadas").textContent=ap;
     document.getElementById("adminPendientes").textContent=pe;
 
     if(!pe) pendientes.innerHTML="<p>No hay donaciones pendientes.</p>";
-    if(!ap) hist.innerHTML="<p>No hay donaciones aprobadas.</p>";
+    renderHistorialDonacionesAdmin();
   });
 }
 
