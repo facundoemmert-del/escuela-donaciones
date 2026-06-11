@@ -23,6 +23,14 @@ function calcularPorcentaje(recaudado, precio) {
   return Math.min(100, Math.round((recaudado / precio) * 100));
 }
 
+function textoAHtml(texto) {
+  if (!texto) return "";
+  return texto
+    .split("\n")
+    .map(linea => `<p>${linea}</p>`)
+    .join("");
+}
+
 function cargarConfiguracion() {
   const ref = doc(db, "configuracion", "sitio");
 
@@ -34,9 +42,15 @@ function cargarConfiguracion() {
     const nombre = data.nombreEscuela || "Los Naranjos de la Concordia D-114";
     const subtitulo = data.subtitulo || "Campaña para la construcción de nuestra nueva escuela";
     const logoUrl = data.logoUrl || "";
+    const info = data.infoInstitucional || "";
 
     document.getElementById("nombreEscuelaPublico").textContent = nombre;
     document.getElementById("subtituloPublico").textContent = subtitulo;
+
+    const infoPublica = document.getElementById("infoInstitucionalPublica");
+    if (infoPublica) {
+      infoPublica.innerHTML = info ? textoAHtml(info) : "<p>Próximamente se publicará información institucional.</p>";
+    }
 
     const logoPublico = document.getElementById("logoPublico");
     const logoFooter = document.getElementById("logoFooter");
@@ -53,10 +67,7 @@ function cargarConfiguracion() {
 function renderizarObjetivos(objetivos) {
   const contenedor = document.querySelector(".objetivos");
 
-  if (!contenedor) {
-    console.error("No se encontró la sección .objetivos");
-    return;
-  }
+  if (!contenedor) return;
 
   contenedor.querySelectorAll(".card").forEach(card => card.remove());
 
@@ -74,11 +85,13 @@ function renderizarObjetivos(objetivos) {
     const porcentaje = calcularPorcentaje(recaudadoVisible, precio);
     const faltante = Math.max(0, precio - recaudadoVisible);
     const completado = porcentaje >= 100;
+    const imagenUrl = objetivo.imagenUrl || "";
 
     const card = document.createElement("div");
-    card.className = "card";
+    card.className = "card objetivo-card";
 
     card.innerHTML = `
+      ${imagenUrl ? `<img class="imagen-objetivo" src="${imagenUrl}" alt="${objetivo.nombre || "Objetivo"}">` : ""}
       <div class="card-header">
         <div>
           <h3>${objetivo.nombre || "Objetivo sin nombre"}</h3>
@@ -119,18 +132,70 @@ function actualizarMetaGeneral(totalRecaudado, totalMeta) {
     `${formatoPesos.format(totalRecaudado)} recaudados de ${formatoPesos.format(totalMeta)} (${porcentajeGeneral}%)`;
 }
 
+function renderizarObra(items) {
+  const contenedor = document.getElementById("galeriaObra");
+  if (!contenedor) return;
+
+  contenedor.innerHTML = "";
+
+  if (!items.length) {
+    contenedor.innerHTML = "<p>Próximamente se publicarán actualizaciones de obra.</p>";
+    return;
+  }
+
+  items.forEach(item => {
+    const div = document.createElement("article");
+    div.className = "card mini-card";
+    div.innerHTML = `
+      ${item.imagenUrl ? `<img src="${item.imagenUrl}" alt="${item.titulo || "Obra"}">` : ""}
+      <h3>${item.titulo || "Actualización de obra"}</h3>
+      <p>${item.descripcion || ""}</p>
+    `;
+    contenedor.appendChild(div);
+  });
+}
+
+function renderizarTransparencia(items) {
+  const contenedor = document.getElementById("listaTransparencia");
+  if (!contenedor) return;
+
+  contenedor.innerHTML = "";
+
+  if (!items.length) {
+    contenedor.innerHTML = "<p>Próximamente se publicarán comprobantes y rendiciones.</p>";
+    return;
+  }
+
+  items.forEach(item => {
+    const monto = Number(item.monto || 0);
+    const div = document.createElement("article");
+    div.className = "card mini-card";
+    div.innerHTML = `
+      <h3>${item.titulo || "Comprobante"}</h3>
+      <p>${item.descripcion || ""}</p>
+      ${monto ? `<p><strong>Monto:</strong> ${formatoPesos.format(monto)}</p>` : ""}
+      ${item.url ? `<a href="${item.url}" target="_blank" rel="noopener">Ver comprobante</a>` : ""}
+    `;
+    contenedor.appendChild(div);
+  });
+}
+
 cargarConfiguracion();
 
-const q = query(collection(db, "objetivos"));
-
-onSnapshot(q, snapshot => {
+onSnapshot(query(collection(db, "objetivos")), snapshot => {
   const objetivos = [];
-  snapshot.forEach(doc => {
-    objetivos.push({
-      id: doc.id,
-      ...doc.data()
-    });
-  });
-
+  snapshot.forEach(doc => objetivos.push({ id: doc.id, ...doc.data() }));
   renderizarObjetivos(objetivos);
+});
+
+onSnapshot(query(collection(db, "obra")), snapshot => {
+  const items = [];
+  snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
+  renderizarObra(items);
+});
+
+onSnapshot(query(collection(db, "transparencia")), snapshot => {
+  const items = [];
+  snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
+  renderizarTransparencia(items);
 });
