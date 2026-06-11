@@ -397,17 +397,29 @@ function obra(){
 
   f.onsubmit=async e=>{
     e.preventDefault();
+
+    const titulo=document.getElementById("obraTitulo").value.trim();
+    const imagenUrl=document.getElementById("obraImagenUrl").value.trim();
+    const descripcion=document.getElementById("obraDescripcion").value.trim();
+
+    if(!titulo || !imagenUrl || !descripcion){
+      alert("Para crear una actualización de obra completá título, URL de foto y descripción.");
+      return;
+    }
+
     await addDoc(collection(db,"obra"),{
-      titulo:document.getElementById("obraTitulo").value.trim(),
-      imagenUrl:document.getElementById("obraImagenUrl").value.trim(),
-      descripcion:document.getElementById("obraDescripcion").value.trim(),
+      titulo,
+      imagenUrl,
+      descripcion,
       creado:serverTimestamp()
     });
+
     f.reset();
   };
 
   onSnapshot(query(collection(db,"obra")),s=>{
     l.innerHTML="";
+
     s.forEach(d=>{
       const x=d.data();
       const id=d.id;
@@ -418,11 +430,17 @@ function obra(){
         ${x.imagenUrl?`<img class="imagen-admin" src="${x.imagenUrl}">`:""}
         <h3>${x.titulo||"Obra"}</h3>
         <p>${x.descripcion||""}</p>
+
         <button onclick="abrirEditorObra('${id}')">Editar</button>
         <button class="btn-danger" onclick="eliminarObra('${id}')">Eliminar</button>
       `;
+
       l.appendChild(div);
     });
+
+    if(!l.innerHTML){
+      l.innerHTML="<p>No hay actualizaciones de obra cargadas.</p>";
+    }
   });
 }
 
@@ -458,12 +476,13 @@ window.guardarObra=async id=>{
     descripcion:document.getElementById("edit-obra-descripcion-"+id).value.trim(),
     actualizado:serverTimestamp()
   });
+
   alert("Actualización de obra editada.");
   cerrarModalAdmin();
 };
 
 window.eliminarObra=async id=>{
-  if(confirm("¿Eliminar esta actualización de obra?")){
+  if(confirm("¿Seguro que querés eliminar esta actualización de obra?")){
     await deleteDoc(doc(db,"obra",id));
   }
 };
@@ -477,31 +496,102 @@ function transparencia(){
 
   f.onsubmit=async e=>{
     e.preventDefault();
+
+    const titulo=document.getElementById("transTitulo").value.trim();
+    const monto=Number(document.getElementById("transMonto").value||0);
+    const url=document.getElementById("transUrl").value.trim();
+    const descripcion=document.getElementById("transDescripcion").value.trim();
+
+    if(!titulo || !monto || monto<=0 || !url || !descripcion){
+      alert("Para crear un comprobante de transparencia completá título, monto, URL y descripción.");
+      return;
+    }
+
     await addDoc(collection(db,"transparencia"),{
-      titulo:document.getElementById("transTitulo").value.trim(),
-      monto:Number(document.getElementById("transMonto").value||0),
-      url:document.getElementById("transUrl").value.trim(),
-      descripcion:document.getElementById("transDescripcion").value.trim(),
+      titulo,
+      monto,
+      url,
+      descripcion,
       creado:serverTimestamp()
     });
+
     f.reset();
   };
 
   onSnapshot(query(collection(db,"transparencia")),s=>{
     l.innerHTML="";
+
     s.forEach(d=>{
       const x=d.data();
-      l.innerHTML+=`
-        <div class="card">
-          <h3>${x.titulo||"Comprobante"}</h3>
-          <p>${x.descripcion||""}</p>
-          <p><strong>Monto:</strong> ${formatoPesos.format(Number(x.monto||0))}</p>
-          ${x.url?`<a href="${x.url}" target="_blank">Ver comprobante</a>`:""}
-        </div>
+      const id=d.id;
+
+      const div=document.createElement("div");
+      div.className="card";
+      div.innerHTML=`
+        <h3>${x.titulo||"Comprobante"}</h3>
+        <p><strong>Monto:</strong> ${formatoPesos.format(Number(x.monto||0))}</p>
+        <p>${x.descripcion||""}</p>
+        ${x.url?`<p><a href="${x.url}" target="_blank">Ver comprobante</a></p>`:""}
+
+        <button onclick="abrirEditorTransparencia('${id}')">Editar</button>
+        <button class="btn-danger" onclick="eliminarTransparencia('${id}')">Eliminar</button>
       `;
+
+      l.appendChild(div);
     });
+
+    if(!l.innerHTML){
+      l.innerHTML="<p>No hay comprobantes cargados.</p>";
+    }
   });
 }
+
+window.abrirEditorTransparencia=async id=>{
+  const snap=await getDoc(doc(db,"transparencia",id));
+  if(!snap.exists()) return alert("No se encontró el comprobante.");
+
+  const x=snap.data();
+
+  crearModalAdmin("Editar transparencia", `
+    <div class="form-modal-admin">
+      <label>Título</label>
+      <input id="edit-trans-titulo-${id}" value="${limpiarTexto(x.titulo||"")}" placeholder="Título">
+
+      <label>Monto</label>
+      <input id="edit-trans-monto-${id}" type="number" value="${Number(x.monto||0)}" placeholder="Monto">
+
+      <label>URL del comprobante</label>
+      <input id="edit-trans-url-${id}" value="${limpiarTexto(x.url||"")}" placeholder="URL del comprobante">
+
+      <label>Descripción</label>
+      <textarea id="edit-trans-descripcion-${id}" placeholder="Descripción">${x.descripcion||""}</textarea>
+
+      <div class="acciones-modal">
+        <button onclick="guardarTransparencia('${id}')">Guardar cambios</button>
+        <button type="button" onclick="cerrarModalAdmin()">Cancelar</button>
+      </div>
+    </div>
+  `);
+};
+
+window.guardarTransparencia=async id=>{
+  await updateDoc(doc(db,"transparencia",id),{
+    titulo:document.getElementById("edit-trans-titulo-"+id).value.trim(),
+    monto:Number(document.getElementById("edit-trans-monto-"+id).value||0),
+    url:document.getElementById("edit-trans-url-"+id).value.trim(),
+    descripcion:document.getElementById("edit-trans-descripcion-"+id).value.trim(),
+    actualizado:serverTimestamp()
+  });
+
+  alert("Comprobante de transparencia editado.");
+  cerrarModalAdmin();
+};
+
+window.eliminarTransparencia=async id=>{
+  if(confirm("¿Seguro que querés eliminar este comprobante de transparencia?")){
+    await deleteDoc(doc(db,"transparencia",id));
+  }
+};
 
 function permisosComoTexto(permisos={}){
   const nombres={
