@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ingreso administrador</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="login-body">
+
+<section class="login-card">
+  <h1>Acceso administrador</h1>
+  <p>Los Naranjos de la Concordia D-114</p>
+
+  <form id="loginForm">
+    <input id="loginEmail" type="email" placeholder="Correo electrónico" required>
+    <input id="loginPassword" type="password" placeholder="Contraseña" required>
+    <button type="submit">Ingresar</button>
+  </form>
+
+  <button id="crearCuentaBtn" class="btn-secundario">Crear cuenta autorizada</button>
+  <button id="recuperarBtn" class="btn-link">Olvidé mi contraseña</button>
+
+  <p id="loginMensaje" class="mensaje"></p>
+</section>
+
+<script type="module" src="js/login.js"></script>
+</body>
+</html>
