@@ -95,13 +95,20 @@
     <div class="stat-card"><h3 id="adminAprobadas">0</h3><p>Aprobadas</p></div>
     <div class="stat-card"><h3 id="adminPendientes">0</h3><p>Pendientes</p></div>
   </div>
-  <h3>Donaciones pendientes</h3>
-  <div id="listaDonacionesPendientes"></div>
-  <h3>Historial de donaciones aprobadas</h3>
-  <div id="historialDonacionesAdmin"></div>
-</section>
 
-<section id="tab-obra" class="tab-panel" data-panel-permiso="obra">
+  <div class="donaciones-admin-grid">
+    <div class="donaciones-columna">
+      <h3>Donaciones pendientes</h3>
+      <div id="listaDonacionesPendientes"></div>
+    </div>
+
+    <div class="donaciones-columna">
+      <h3>Historial de donaciones aprobadas</h3>
+      <input id="buscadorHistorialDonaciones" class="buscador-historial" placeholder="Buscar por nombre, apellido, DNI u objetivo...">
+      <div id="historialDonacionesAdmin"></div>
+    </div>
+  </div>
+</section><section id="tab-obra" class="tab-panel" data-panel-permiso="obra">
   <h2>Actualización de obra</h2>
   <form id="obraForm" class="form-admin">
     <input id="obraTitulo" placeholder="Título">
