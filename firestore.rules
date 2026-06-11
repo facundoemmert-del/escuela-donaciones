@@ -3,12 +3,64 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    match /objetivos/{objetivoId} {
-      allow read: if true;
+    function signedIn() {
+      return request.auth != null;
+    }
 
-      // Regla temporal para pruebas.
-      // Para uso real, en el ZIP de login vamos a proteger escritura con usuario administrador.
-      allow create, update, delete: if true;
+    function isSuperAdmin() {
+      return signedIn() && request.auth.token.email == "facundoemmert@gmail.com";
+    }
+
+    function emailId() {
+      return request.auth.token.email
+        .lower()
+        .replace('.', '_')
+        .replace('#', '_')
+        .replace('$', '_')
+        .replace('[', '_')
+        .replace(']', '_')
+        .replace('/', '_');
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/usuarios/$(emailId()));
+    }
+
+    function isActiveAdmin() {
+      return isSuperAdmin() ||
+        (signedIn() &&
+        exists(/databases/$(database)/documents/usuarios/$(emailId())) &&
+        userDoc().data.activo == true);
+    }
+
+    function hasPermission(p) {
+      return isSuperAdmin() ||
+        (isActiveAdmin() && userDoc().data.permisos[p] == true);
+    }
+
+    match /objetivos/{id} {
+      allow read: if true;
+      allow write: if hasPermission("objetivos");
+    }
+
+    match /configuracion/{id} {
+      allow read: if true;
+      allow write: if hasPermission("institucional");
+    }
+
+    match /obra/{id} {
+      allow read: if true;
+      allow write: if hasPermission("obra");
+    }
+
+    match /transparencia/{id} {
+      allow read: if true;
+      allow write: if hasPermission("transparencia");
+    }
+
+    match /usuarios/{id} {
+      allow read: if isActiveAdmin();
+      allow write: if isSuperAdmin();
     }
   }
 }
