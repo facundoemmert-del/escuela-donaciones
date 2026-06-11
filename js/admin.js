@@ -11,13 +11,16 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 const SUPERADMIN_EMAIL = "facundoemmert@gmail.com";
+const SUPERADMIN_UID = "IArWgSKZF4a8eu0j3eoWS4el2P02";
+
 let usuarioActualData = null;
+let objetivosCache = [];
 
-const formatoPesos = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 });
-
-function idEmail(email) {
-  return email.toLowerCase().replace(/[.#$/\[\]]/g, "_");
-}
+const formatoPesos = new Intl.NumberFormat("es-AR", {
+  style: "currency",
+  currency: "ARS",
+  maximumFractionDigits: 0
+});
 
 function tienePermiso(permiso) {
   if (!usuarioActualData) return false;
@@ -25,26 +28,12 @@ function tienePermiso(permiso) {
   return usuarioActualData.permisos && usuarioActualData.permisos[permiso] === true;
 }
 
-function mostrarPanelesPermitidos() {
-  document.querySelectorAll("[data-permiso]").forEach(btn => {
-    const permiso = btn.dataset.permiso;
-    btn.style.display = tienePermiso(permiso) ? "inline-block" : "none";
-  });
-
-  document.querySelectorAll("[data-panel-permiso]").forEach(panel => {
-    const permiso = panel.dataset.panelPermiso;
-    if (!tienePermiso(permiso)) panel.remove();
-  });
-
-  const primerBoton = document.querySelector(".tab-btn[style*='inline-block'], .tab-btn:not([style*='display: none'])");
-  if (primerBoton) primerBoton.click();
-}
-
 async function cargarUsuario(user) {
   const email = user.email.toLowerCase();
 
-  if (email === SUPERADMIN_EMAIL) {
+  if (email === SUPERADMIN_EMAIL || user.uid === SUPERADMIN_UID) {
     usuarioActualData = {
+      uid: user.uid,
       nombre: "Facundo Emmert",
       email,
       rol: "superadmin",
@@ -58,17 +47,43 @@ async function cargarUsuario(user) {
       }
     };
 
-    await setDoc(doc(db, "usuarios", idEmail(email)), usuarioActualData, { merge: true });
+    await setDoc(doc(db, "admins", user.uid), {
+      ...usuarioActualData,
+      actualizado: serverTimestamp()
+    }, { merge: true });
+
     return true;
   }
 
-  const ref = doc(db, "usuarios", idEmail(email));
-  const snap = await getDoc(ref);
+  const adminUid = await getDoc(doc(db, "admins", user.uid));
 
-  if (!snap.exists() || snap.data().activo !== true) return false;
+  if (adminUid.exists() && adminUid.data().activo === true) {
+    usuarioActualData = adminUid.data();
+    return true;
+  }
 
-  usuarioActualData = snap.data();
-  return true;
+  const invitacion = await getDoc(doc(db, "adminsByEmail", email));
+
+  if (invitacion.exists() && invitacion.data().activo === true) {
+    const data = invitacion.data();
+    usuarioActualData = {
+      uid: user.uid,
+      nombre: data.nombre || email,
+      email,
+      rol: "admin",
+      activo: true,
+      permisos: data.permisos || {}
+    };
+
+    await setDoc(doc(db, "admins", user.uid), {
+      ...usuarioActualData,
+      actualizado: serverTimestamp()
+    }, { merge: true });
+
+    return true;
+  }
+
+  return false;
 }
 
 onAuthStateChanged(auth, async (user) => {
@@ -101,7 +116,8 @@ document.getElementById("cerrarSesionBtn").addEventListener("click", async () =>
 
 function iniciarPanel() {
   activarTabs();
-  mostrarPanelesPermitidos();
+  ocultarSeccionesSinPermiso();
+
   iniciarConfiguracion();
   iniciarObjetivos();
   iniciarObra();
@@ -124,12 +140,27 @@ function activarTabs() {
   });
 }
 
+function ocultarSeccionesSinPermiso() {
+  document.querySelectorAll("[data-permiso]").forEach(btn => {
+    const permiso = btn.dataset.permiso;
+    if (!tienePermiso(permiso)) btn.remove();
+  });
+
+  document.querySelectorAll("[data-panel-permiso]").forEach(panel => {
+    const permiso = panel.dataset.panelPermiso;
+    if (!tienePermiso(permiso)) panel.remove();
+  });
+
+  const primerBoton = document.querySelector(".tab-btn");
+  if (primerBoton) primerBoton.click();
+}
+
 function iniciarConfiguracion() {
   if (!tienePermiso("institucional")) return;
 
   const configRef = doc(db, "configuracion", "sitio");
-  const configForm = document.getElementById("configForm");
-  if (!configForm) return;
+  const form = document.getElementById("configForm");
+  if (!form) return;
 
   onSnapshot(configRef, documento => {
     if (!documento.exists()) return;
@@ -148,7 +179,7 @@ function iniciarConfiguracion() {
     }
   });
 
-  configForm.addEventListener("submit", async (e) => {
+  form.addEventListener("submit", async e => {
     e.preventDefault();
     await setDoc(configRef, {
       nombreEscuela: document.getElementById("nombreEscuela").value.trim(),
@@ -168,18 +199,16 @@ function iniciarConfiguracion() {
   });
 }
 
-let objetivosCache = [];
-
 function iniciarObjetivos() {
   if (!tienePermiso("objetivos")) return;
 
-  const objetivoForm = document.getElementById("objetivoForm");
-  const lista = document.getElementById("listaObjetivos");
+  const form = document.getElementById("objetivoForm");
   const buscador = document.getElementById("buscadorObjetivos");
-  if (!objetivoForm || !lista) return;
+  if (!form || !buscador) return;
 
-  objetivoForm.addEventListener("submit", async (e) => {
+  form.addEventListener("submit", async e => {
     e.preventDefault();
+
     const precio = Number(document.getElementById("precio").value);
     const recaudado = Number(document.getElementById("recaudado").value || 0);
 
@@ -193,7 +222,7 @@ function iniciarObjetivos() {
       creado: serverTimestamp()
     });
 
-    objetivoForm.reset();
+    form.reset();
     document.getElementById("recaudado").value = 0;
   });
 
@@ -224,7 +253,7 @@ function renderObjetivosAdmin() {
       const completado = precio > 0 && recaudado >= precio;
 
       const div = document.createElement("div");
-      div.className = "card admin-objetivo";
+      div.className = "card";
       div.innerHTML = `
         <div id="vista-${id}">
           ${o.imagenUrl ? `<img class="imagen-admin" src="${o.imagenUrl}" alt="${o.nombre || "Objetivo"}">` : ""}
@@ -235,13 +264,10 @@ function renderObjetivosAdmin() {
           <p>Faltante: ${formatoPesos.format(faltante)}</p>
           <p>${completado ? "✅ Objetivo completado" : "Objetivo abierto"}</p>
 
-          <label>Registrar donación</label>
           <input type="number" id="donacion-${id}" placeholder="Monto donado" ${completado ? "disabled" : ""}>
-
           <button onclick="registrarDonacion('${id}', ${precio}, ${recaudado})" ${completado ? "disabled" : ""}>
             ${completado ? "Donaciones cerradas" : "Registrar donación"}
           </button>
-
           <button onclick="mostrarEditor('${id}')">Editar</button>
           <button class="btn-danger" onclick="eliminarObjetivo('${id}')">Eliminar</button>
         </div>
@@ -266,10 +292,12 @@ window.mostrarEditor = id => {
   document.getElementById("vista-" + id).classList.add("oculto");
   document.getElementById("editor-" + id).classList.remove("oculto");
 };
+
 window.cancelarEditor = id => {
   document.getElementById("editor-" + id).classList.add("oculto");
   document.getElementById("vista-" + id).classList.remove("oculto");
 };
+
 window.guardarEdicion = async id => {
   const precio = Number(document.getElementById("edit-precio-" + id).value);
   const recaudado = Number(document.getElementById("edit-recaudado-" + id).value);
@@ -283,8 +311,10 @@ window.guardarEdicion = async id => {
     urgente: document.getElementById("edit-urgente-" + id).checked,
     actualizado: serverTimestamp()
   });
+
   alert("Objetivo actualizado.");
 };
+
 window.registrarDonacion = async (id, precio, recaudadoActual) => {
   const input = document.getElementById("donacion-" + id);
   const monto = Number(input.value);
@@ -296,6 +326,7 @@ window.registrarDonacion = async (id, precio, recaudadoActual) => {
   await updateDoc(doc(db, "objetivos", id), { recaudado: increment(monto) });
   input.value = "";
 };
+
 window.eliminarObjetivo = async id => {
   if (!confirm("¿Seguro que querés eliminar este objetivo?")) return;
   await deleteDoc(doc(db, "objetivos", id));
@@ -303,6 +334,7 @@ window.eliminarObjetivo = async id => {
 
 function iniciarObra() {
   if (!tienePermiso("obra")) return;
+
   const form = document.getElementById("obraForm");
   const lista = document.getElementById("listaObra");
   if (!form || !lista) return;
@@ -329,6 +361,7 @@ function iniciarObra() {
     });
   });
 }
+
 window.eliminarObra = async id => {
   if (!confirm("¿Eliminar esta actualización?")) return;
   await deleteDoc(doc(db, "obra", id));
@@ -336,6 +369,7 @@ window.eliminarObra = async id => {
 
 function iniciarTransparencia() {
   if (!tienePermiso("transparencia")) return;
+
   const form = document.getElementById("transparenciaForm");
   const lista = document.getElementById("listaTransparenciaAdmin");
   if (!form || !lista) return;
@@ -363,6 +397,7 @@ function iniciarTransparencia() {
     });
   });
 }
+
 window.eliminarTransparencia = async id => {
   if (!confirm("¿Eliminar este comprobante?")) return;
   await deleteDoc(doc(db, "transparencia", id));
@@ -380,7 +415,7 @@ function iniciarUsuarios() {
 
     const email = document.getElementById("usuarioEmail").value.trim().toLowerCase();
 
-    await setDoc(doc(db, "usuarios", idEmail(email)), {
+    await setDoc(doc(db, "adminsByEmail", email), {
       nombre: document.getElementById("usuarioNombre").value.trim(),
       email,
       rol: "admin",
@@ -392,14 +427,15 @@ function iniciarUsuarios() {
         transparencia: document.getElementById("permTransparencia").checked,
         usuarios: false
       },
+      autorizadoPor: usuarioActualData.email,
       creado: serverTimestamp()
     });
 
     form.reset();
-    alert("Administrador autorizado. Ahora esa persona puede crear su cuenta desde login.html.");
+    alert("Administrador autorizado. Ahora esa persona entra a login.html y toca Crear cuenta autorizada.");
   });
 
-  onSnapshot(query(collection(db, "usuarios")), snapshot => {
+  onSnapshot(query(collection(db, "adminsByEmail")), snapshot => {
     lista.innerHTML = "";
     snapshot.forEach(d => {
       const u = d.data();
@@ -408,15 +444,15 @@ function iniciarUsuarios() {
       div.innerHTML = `
         <h3>${u.nombre || "Sin nombre"}</h3>
         <p>${u.email}</p>
-        <p>Rol: ${u.rol}</p>
         <p>Estado: ${u.activo ? "Activo" : "Bloqueado"}</p>
-        <p>Permisos: ${Object.entries(u.permisos || {}).filter(([k,v]) => v).map(([k]) => k).join(", ")}</p>
-        ${u.rol !== "superadmin" ? `<button onclick="cambiarEstadoUsuario('${d.id}', ${u.activo ? "false" : "true"})">${u.activo ? "Bloquear" : "Activar"}</button>` : ""}
+        <p>Permisos: ${Object.entries(u.permisos || {}).filter(([k,v]) => v).map(([k]) => k).join(", ") || "Sin permisos"}</p>
+        <button onclick="cambiarEstadoAdmin('${d.id}', ${u.activo ? "false" : "true"})">${u.activo ? "Bloquear" : "Activar"}</button>
       `;
       lista.appendChild(div);
     });
   });
 }
-window.cambiarEstadoUsuario = async (id, estado) => {
-  await updateDoc(doc(db, "usuarios", id), { activo: estado });
+
+window.cambiarEstadoAdmin = async (id, estado) => {
+  await updateDoc(doc(db, "adminsByEmail", id), { activo: estado });
 };

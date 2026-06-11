@@ -9,7 +9,9 @@ import {
 import {
   getFirestore,
   doc,
-  getDoc
+  getDoc,
+  setDoc,
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
@@ -18,25 +20,65 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 const SUPERADMIN_EMAIL = "facundoemmert@gmail.com";
+const SUPERADMIN_UID = "IArWgSKZF4a8eu0j3eoWS4el2P02";
 
 const loginForm = document.getElementById("loginForm");
 const crearCuentaBtn = document.getElementById("crearCuentaBtn");
 const recuperarBtn = document.getElementById("recuperarBtn");
 const mensaje = document.getElementById("loginMensaje");
 
-function idEmail(email) {
-  return email.toLowerCase().replace(/[.#$/\[\]]/g, "_");
-}
-
 async function estaAutorizado(email) {
   const emailMin = email.toLowerCase();
 
   if (emailMin === SUPERADMIN_EMAIL) return true;
 
-  const ref = doc(db, "usuarios", idEmail(emailMin));
-  const snap = await getDoc(ref);
+  const invitacion = await getDoc(doc(db, "adminsByEmail", emailMin));
+  return invitacion.exists() && invitacion.data().activo === true;
+}
 
-  return snap.exists() && snap.data().activo === true;
+async function sincronizarAdmin(user) {
+  const email = user.email.toLowerCase();
+
+  if (email === SUPERADMIN_EMAIL || user.uid === SUPERADMIN_UID) {
+    await setDoc(doc(db, "admins", user.uid), {
+      uid: user.uid,
+      nombre: "Facundo Emmert",
+      email,
+      rol: "superadmin",
+      activo: true,
+      permisos: {
+        institucional: true,
+        objetivos: true,
+        obra: true,
+        transparencia: true,
+        usuarios: true
+      },
+      actualizado: serverTimestamp()
+    }, { merge: true });
+    return true;
+  }
+
+  const invitacionRef = doc(db, "adminsByEmail", email);
+  const invitacionSnap = await getDoc(invitacionRef);
+
+  if (!invitacionSnap.exists() || invitacionSnap.data().activo !== true) {
+    return false;
+  }
+
+  const invitacion = invitacionSnap.data();
+
+  await setDoc(doc(db, "admins", user.uid), {
+    uid: user.uid,
+    nombre: invitacion.nombre || email,
+    email,
+    rol: "admin",
+    activo: true,
+    permisos: invitacion.permisos || {},
+    creadoDesdeInvitacion: true,
+    actualizado: serverTimestamp()
+  }, { merge: true });
+
+  return true;
 }
 
 loginForm.addEventListener("submit", async (e) => {
@@ -47,8 +89,7 @@ loginForm.addEventListener("submit", async (e) => {
 
   try {
     const cred = await signInWithEmailAndPassword(auth, email, password);
-
-    const autorizado = await estaAutorizado(cred.user.email);
+    const autorizado = await sincronizarAdmin(cred.user);
 
     if (!autorizado) {
       await signOut(auth);
@@ -79,8 +120,10 @@ crearCuentaBtn.addEventListener("click", async () => {
       return;
     }
 
-    await createUserWithEmailAndPassword(auth, email, password);
-    mensaje.textContent = "Cuenta creada. Ya podés ingresar al panel.";
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    await sincronizarAdmin(cred.user);
+
+    mensaje.textContent = "Cuenta creada. Ingresando...";
     window.location.href = "admin.html";
   } catch (error) {
     mensaje.textContent = "No se pudo crear la cuenta. Tal vez ya existe o la contraseña es débil.";
