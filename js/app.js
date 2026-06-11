@@ -3,8 +3,7 @@ import {
   getFirestore,
   collection,
   onSnapshot,
-  query,
-  orderBy
+  query
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 import { firebaseConfig } from "./firebase-config.js";
@@ -39,12 +38,13 @@ function renderizarObjetivos(objetivos) {
   objetivos.forEach(objetivo => {
     const precio = Number(objetivo.precio || 0);
     const recaudado = Number(objetivo.recaudado || 0);
+    const recaudadoVisible = Math.min(recaudado, precio);
 
     totalMeta += precio;
-    totalRecaudado += Math.min(recaudado, precio);
+    totalRecaudado += recaudadoVisible;
 
-    const porcentaje = calcularPorcentaje(recaudado, precio);
-    const faltante = Math.max(0, precio - recaudado);
+    const porcentaje = calcularPorcentaje(recaudadoVisible, precio);
+    const faltante = Math.max(0, precio - recaudadoVisible);
     const completado = porcentaje >= 100;
 
     const card = document.createElement("div");
@@ -64,8 +64,8 @@ function renderizarObjetivos(objetivos) {
       </div>
 
       <p><strong>${porcentaje}% completado</strong></p>
-      <p>Recaudado: ${formatoPesos.format(Math.min(recaudado, precio))} de ${formatoPesos.format(precio)}</p>
-      <p>${completado ? "Objetivo completado" : "Faltan: " + formatoPesos.format(faltante)}</p>
+      <p>Recaudado: ${formatoPesos.format(recaudadoVisible)} de ${formatoPesos.format(precio)}</p>
+      <p>${completado ? "✅ Objetivo completado" : "Faltan: " + formatoPesos.format(faltante)}</p>
 
       <button ${completado ? "disabled" : ""}>
         ${completado ? "Donaciones cerradas" : "Donar para este objetivo"}
