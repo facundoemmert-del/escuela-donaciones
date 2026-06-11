@@ -16,47 +16,86 @@
   </div>
 </header>
 
-<section class="panel-config">
-  <h2>Configuración institucional</h2>
+<div class="admin-tabs">
+  <button class="tab-btn activo" data-tab="tab-config">Información institucional</button>
+  <button class="tab-btn" data-tab="tab-objetivos">Objetivos</button>
+  <button class="tab-btn" data-tab="tab-obra">Actualización de obra</button>
+  <button class="tab-btn" data-tab="tab-transparencia">Transparencia</button>
+</div>
 
-  <form id="configForm" class="form-admin">
-    <input id="nombreEscuela" placeholder="Nombre de la escuela">
-    <input id="subtituloEscuela" placeholder="Subtítulo de la campaña">
+<main class="admin-main">
 
-    <input id="logoUrl" placeholder="URL del logo">
-    <button type="button" id="guardarLogoUrl">Guardar logo por URL</button>
+  <section id="tab-config" class="tab-panel activo">
+    <h2>Información institucional</h2>
 
-    <input id="logoArchivo" type="file" accept="image/*">
-    <button type="button" id="subirLogo">Subir logo desde archivo</button>
+    <form id="configForm" class="form-admin">
+      <input id="nombreEscuela" placeholder="Nombre de la escuela">
+      <input id="subtituloEscuela" placeholder="Subtítulo de la campaña">
+      <input id="logoUrl" placeholder="URL del logo">
 
-    <button type="submit">Guardar configuración</button>
-  </form>
+      <textarea id="infoInstitucional" placeholder="Escribí información de la escuela, historia, ubicación, necesidad de la nueva escuela, cantidad de estudiantes, contexto comunitario, etc."></textarea>
 
-  <p class="ayuda">
-    Primero probá con “URL del logo”. Luego, si Firebase Storage está habilitado, podés subir el archivo directamente.
-  </p>
-</section>
+      <button type="button" id="guardarLogoUrl">Guardar logo por URL</button>
+      <button type="submit">Guardar información institucional</button>
+    </form>
+  </section>
 
-<section class="panel-objetivos">
-  <h2>Agregar objetivo</h2>
+  <section id="tab-objetivos" class="tab-panel">
+    <h2>Objetivos</h2>
 
-  <form id="objetivoForm" class="form-admin">
-    <input id="nombre" placeholder="Nombre del objetivo" required>
-    <input type="text" id="descripcion" placeholder="Descripción del objetivo">
-    <input id="precio" type="number" placeholder="Precio total del objetivo" required>
-    <input id="recaudado" type="number" placeholder="Monto ya recaudado" value="0" required>
+    <div class="barra-admin">
+      <input id="buscadorObjetivos" placeholder="Buscar objetivo por nombre o descripción...">
+    </div>
 
-    <label class="check-admin">
-      <input id="urgente" type="checkbox">
-      Marcar como urgente
-    </label>
+    <form id="objetivoForm" class="form-admin">
+      <input id="nombre" placeholder="Nombre del objetivo" required>
+      <input id="descripcion" placeholder="Descripción del objetivo">
+      <input id="precio" type="number" placeholder="Precio total del objetivo" required>
+      <input id="recaudado" type="number" placeholder="Monto ya recaudado" value="0" required>
+      <input id="imagenUrl" placeholder="URL de imagen del objetivo">
 
-    <button type="submit">Agregar Objetivo</button>
-  </form>
-</section>
+      <label class="check-admin">
+        <input id="urgente" type="checkbox">
+        Marcar como urgente
+      </label>
 
-<h2 class="titulo-admin">Objetivos cargados</h2>
-<div id="listaObjetivos"></div>
+      <button type="submit">Agregar objetivo</button>
+    </form>
+
+    <h3>Objetivos cargados</h3>
+    <div id="listaObjetivos"></div>
+  </section>
+
+  <section id="tab-obra" class="tab-panel">
+    <h2>Actualización de obra</h2>
+    <p class="texto-ayuda">Cargá fotos o avances de la construcción. Por ahora se recomienda pegar una URL de imagen.</p>
+
+    <form id="obraForm" class="form-admin">
+      <input id="obraTitulo" placeholder="Título. Ej: Colocación de aberturas">
+      <input id="obraImagenUrl" placeholder="URL de la foto de obra">
+      <textarea id="obraDescripcion" placeholder="Descripción del avance de obra"></textarea>
+      <button type="submit">Agregar actualización de obra</button>
+    </form>
+
+    <div id="listaObra"></div>
+  </section>
+
+  <section id="tab-transparencia" class="tab-panel">
+    <h2>Transparencia</h2>
+    <p class="texto-ayuda">Subí enlaces de facturas, presupuestos, comprobantes, fotos de compras o rendiciones.</p>
+
+    <form id="transparenciaForm" class="form-admin">
+      <input id="transTitulo" placeholder="Título. Ej: Factura compra de puerta">
+      <input id="transMonto" type="number" placeholder="Monto">
+      <input id="transUrl" placeholder="URL del comprobante/factura/imagen">
+      <textarea id="transDescripcion" placeholder="Descripción o detalle del gasto"></textarea>
+      <button type="submit">Agregar comprobante</button>
+    </form>
+
+    <div id="listaTransparenciaAdmin"></div>
+  </section>
+
+</main>
 
 <script type="module" src="js/admin.js"></script>
 </body>
