@@ -57,11 +57,15 @@
     <form id="donacionForm">
       <label>Nombre y apellido del donante *</label>
       <input id="donanteNombre" placeholder="Ej: Juan Pérez" required>
+
       <label>Monto transferido *</label>
       <input id="donacionMonto" type="number" placeholder="Ej: 5000" required>
-      <label>Comprobante obligatorio *</label>
-      <input id="donacionComprobante" placeholder="Pegá URL de imagen/PDF del comprobante" required>
-      <button type="submit">Enviar comprobante para revisión</button>
+
+      <label>Subir comprobante *</label>
+      <input id="donacionComprobanteArchivo" type="file" accept="image/*,.pdf,application/pdf" required>
+      <p class="texto-ayuda">Podés subir una foto, captura o PDF del comprobante. Tamaño máximo recomendado: 5 MB.</p>
+
+      <button id="enviarDonacionBtn" type="submit">Enviar comprobante para revisión</button>
     </form>
     <p class="texto-ayuda">La barra se actualiza recién cuando un administrador verifica y aprueba el comprobante.</p>
   </div>
