@@ -27,12 +27,41 @@ const crearCuentaBtn = document.getElementById("crearCuentaBtn");
 const recuperarBtn = document.getElementById("recuperarBtn");
 const mensaje = document.getElementById("loginMensaje");
 
+function mostrar(texto) {
+  mensaje.textContent = texto;
+}
+
+function leerCredenciales() {
+  const email = document.getElementById("loginEmail").value.trim().toLowerCase();
+  const password = document.getElementById("loginPassword").value;
+
+  return { email, password };
+}
+
+function explicarError(error) {
+  const code = error.code || "";
+
+  const errores = {
+    "auth/invalid-email": "El correo no tiene formato válido.",
+    "auth/user-not-found": "No existe una cuenta con ese correo. Si sos admin autorizado, tocá “Crear cuenta autorizada”.",
+    "auth/wrong-password": "La contraseña es incorrecta.",
+    "auth/invalid-credential": "Correo o contraseña incorrectos, o el usuario no existe.",
+    "auth/email-already-in-use": "Ese correo ya está registrado. Usá “Ingresar” o recuperá la contraseña.",
+    "auth/weak-password": "La contraseña es débil. Debe tener al menos 6 caracteres.",
+    "auth/network-request-failed": "Error de conexión. Revisá internet.",
+    "auth/too-many-requests": "Firebase bloqueó temporalmente por muchos intentos. Esperá unos minutos.",
+    "permission-denied": "Firebase no permitió leer/escribir permisos. Revisar reglas de Firestore.",
+    "auth/missing-password": "Falta escribir la contraseña.",
+    "auth/missing-email": "Falta escribir el correo."
+  };
+
+  return errores[code] || `Error: ${code || error.message}`;
+}
+
 async function estaAutorizado(email) {
-  const emailMin = email.toLowerCase();
+  if (email === SUPERADMIN_EMAIL) return true;
 
-  if (emailMin === SUPERADMIN_EMAIL) return true;
-
-  const invitacion = await getDoc(doc(db, "adminsByEmail", emailMin));
+  const invitacion = await getDoc(doc(db, "adminsByEmail", email));
   return invitacion.exists() && invitacion.data().activo === true;
 }
 
@@ -55,6 +84,7 @@ async function sincronizarAdmin(user) {
       },
       actualizado: serverTimestamp()
     }, { merge: true });
+
     return true;
   }
 
@@ -74,7 +104,6 @@ async function sincronizarAdmin(user) {
     rol: "admin",
     activo: true,
     permisos: invitacion.permisos || {},
-    creadoDesdeInvitacion: true,
     actualizado: serverTimestamp()
   }, { merge: true });
 
@@ -84,64 +113,77 @@ async function sincronizarAdmin(user) {
 loginForm.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const email = document.getElementById("loginEmail").value.trim().toLowerCase();
-  const password = document.getElementById("loginPassword").value;
-
-  try {
-    const cred = await signInWithEmailAndPassword(auth, email, password);
-    const autorizado = await sincronizarAdmin(cred.user);
-
-    if (!autorizado) {
-      await signOut(auth);
-      mensaje.textContent = "Tu correo no está autorizado como administrador.";
-      return;
-    }
-
-    window.location.href = "admin.html";
-  } catch (error) {
-    mensaje.textContent = "No se pudo ingresar. Revisá correo y contraseña.";
-  }
-});
-
-crearCuentaBtn.addEventListener("click", async () => {
-  const email = document.getElementById("loginEmail").value.trim().toLowerCase();
-  const password = document.getElementById("loginPassword").value;
+  const { email, password } = leerCredenciales();
 
   if (!email || !password) {
-    mensaje.textContent = "Completá correo y contraseña para crear la cuenta.";
+    mostrar("Completá correo y contraseña.");
     return;
   }
 
   try {
-    const autorizado = await estaAutorizado(email);
+    mostrar("Ingresando...");
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+
+    const autorizado = await sincronizarAdmin(cred.user);
 
     if (!autorizado) {
-      mensaje.textContent = "Ese correo todavía no fue autorizado por el superadministrador.";
+      await signOut(auth);
+      mostrar("La cuenta existe, pero no está autorizada como administrador.");
       return;
     }
 
+    mostrar("Ingreso correcto. Redirigiendo...");
+    window.location.href = "admin.html";
+  } catch (error) {
+    mostrar(explicarError(error));
+  }
+});
+
+crearCuentaBtn.addEventListener("click", async () => {
+  const { email, password } = leerCredenciales();
+
+  if (!email || !password) {
+    mostrar("Completá correo y contraseña para crear la cuenta.");
+    return;
+  }
+
+  if (password.length < 6) {
+    mostrar("La contraseña debe tener al menos 6 caracteres.");
+    return;
+  }
+
+  try {
+    mostrar("Verificando autorización...");
+    const autorizado = await estaAutorizado(email);
+
+    if (!autorizado) {
+      mostrar("Ese correo todavía no fue autorizado por el superadministrador.");
+      return;
+    }
+
+    mostrar("Creando cuenta...");
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     await sincronizarAdmin(cred.user);
 
-    mensaje.textContent = "Cuenta creada. Ingresando...";
+    mostrar("Cuenta creada correctamente. Redirigiendo...");
     window.location.href = "admin.html";
   } catch (error) {
-    mensaje.textContent = "No se pudo crear la cuenta. Tal vez ya existe o la contraseña es débil.";
+    mostrar(explicarError(error));
   }
 });
 
 recuperarBtn.addEventListener("click", async () => {
-  const email = document.getElementById("loginEmail").value.trim().toLowerCase();
+  const { email } = leerCredenciales();
 
   if (!email) {
-    mensaje.textContent = "Escribí tu correo para recuperar la contraseña.";
+    mostrar("Escribí tu correo para recuperar la contraseña.");
     return;
   }
 
   try {
     await sendPasswordResetEmail(auth, email);
-    mensaje.textContent = "Se envió un correo de recuperación.";
+    mostrar("Se envió un correo de recuperación. Revisá Recibidos, Spam y Promociones.");
   } catch (error) {
-    mensaje.textContent = "No se pudo enviar el correo de recuperación.";
+    mostrar(explicarError(error));
   }
 });
