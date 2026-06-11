@@ -8,29 +8,54 @@
 </head>
 <body>
 
-<h1>Panel Administrador - Los Naranjos D-114</h1>
+<header class="admin-header">
+  <img id="logoAdmin" src="" alt="Logo institucional" class="logo-admin oculto">
+  <div>
+    <h1>Panel Administrador</h1>
+    <p id="nombreEscuelaAdmin">Los Naranjos de la Concordia D-114</p>
+  </div>
+</header>
 
-<form id="objetivoForm">
-  <input id="nombre" placeholder="Nombre del objetivo" required>
+<section class="panel-config">
+  <h2>Configuración institucional</h2>
 
- <input
-    type="text"
-    id="descripcion"
-    placeholder="Descripción del objetivo">
+  <form id="configForm" class="form-admin">
+    <input id="nombreEscuela" placeholder="Nombre de la escuela">
+    <input id="subtituloEscuela" placeholder="Subtítulo de la campaña">
 
-  <input id="precio" type="number" placeholder="Precio total del objetivo" required>
+    <input id="logoUrl" placeholder="URL del logo">
+    <button type="button" id="guardarLogoUrl">Guardar logo por URL</button>
 
-  <input id="recaudado" type="number" placeholder="Monto ya recaudado" value="0" required>
+    <input id="logoArchivo" type="file" accept="image/*">
+    <button type="button" id="subirLogo">Subir logo desde archivo</button>
 
-  <label>
-    <input id="urgente" type="checkbox">
-    Marcar como urgente
-  </label>
+    <button type="submit">Guardar configuración</button>
+  </form>
 
-  <button type="submit">Agregar Objetivo</button>
-</form>
+  <p class="ayuda">
+    Primero probá con “URL del logo”. Luego, si Firebase Storage está habilitado, podés subir el archivo directamente.
+  </p>
+</section>
 
-<h2>Objetivos cargados</h2>
+<section class="panel-objetivos">
+  <h2>Agregar objetivo</h2>
+
+  <form id="objetivoForm" class="form-admin">
+    <input id="nombre" placeholder="Nombre del objetivo" required>
+    <input type="text" id="descripcion" placeholder="Descripción del objetivo">
+    <input id="precio" type="number" placeholder="Precio total del objetivo" required>
+    <input id="recaudado" type="number" placeholder="Monto ya recaudado" value="0" required>
+
+    <label class="check-admin">
+      <input id="urgente" type="checkbox">
+      Marcar como urgente
+    </label>
+
+    <button type="submit">Agregar Objetivo</button>
+  </form>
+</section>
+
+<h2 class="titulo-admin">Objetivos cargados</h2>
 <div id="listaObjetivos"></div>
 
 <script type="module" src="js/admin.js"></script>
