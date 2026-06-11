@@ -2,20 +2,523 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth,onAuthStateChanged,signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore,collection,addDoc,updateDoc,deleteDoc,doc,serverTimestamp,increment,query,onSnapshot,setDoc,getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
-const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);const SUPERADMIN_EMAIL="facundoemmert@gmail.com",SUPERADMIN_UID="IArWgSKZF4a8eu0j3eoWS4el2P02";let usuarioActualData=null,objetivosCache=[];const formatoPesos=new Intl.NumberFormat("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0});
-function tienePermiso(p){return usuarioActualData&&(usuarioActualData.rol==="superadmin"||(usuarioActualData.permisos&&usuarioActualData.permisos[p]===true))}
-async function cargarUsuario(user){const email=user.email.toLowerCase();if(email===SUPERADMIN_EMAIL||user.uid===SUPERADMIN_UID){usuarioActualData={uid:user.uid,nombre:"Facundo Emmert",email,rol:"superadmin",activo:true,permisos:{institucional:true,objetivos:true,obra:true,transparencia:true,usuarios:true}};await setDoc(doc(db,"admins",user.uid),{...usuarioActualData,actualizado:serverTimestamp()},{merge:true});return true}const a=await getDoc(doc(db,"admins",user.uid));if(a.exists()&&a.data().activo===true){usuarioActualData=a.data();return true}const inv=await getDoc(doc(db,"adminsByEmail",email));if(inv.exists()&&inv.data().activo===true){const d=inv.data();usuarioActualData={uid:user.uid,nombre:d.nombre||email,email,rol:"admin",activo:true,permisos:d.permisos||{}};await setDoc(doc(db,"admins",user.uid),{...usuarioActualData,actualizado:serverTimestamp()},{merge:true});return true}return false}
-onAuthStateChanged(auth,async user=>{if(!user)return location.href="login.html";if(!await cargarUsuario(user)){await signOut(auth);return location.href="login.html"}document.getElementById("usuarioActual").textContent=`${usuarioActualData.nombre} - ${usuarioActualData.rol}`;document.getElementById("bloqueoAdmin").classList.add("oculto");document.getElementById("adminContenido").classList.remove("oculto");iniciar()});
-document.getElementById("cerrarSesionBtn").onclick=async()=>{await signOut(auth);location.href="login.html"};
-function iniciar(){tabs();permisos();config();objetivos();donaciones();obra();transparencia();usuarios()}
-function tabs(){document.querySelectorAll(".tab-btn").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab-btn").forEach(x=>x.classList.remove("activo"));document.querySelectorAll(".tab-panel").forEach(x=>x.classList.remove("activo"));b.classList.add("activo");document.getElementById(b.dataset.tab)?.classList.add("activo")})}
-function permisos(){document.querySelectorAll("[data-permiso]").forEach(b=>{if(!tienePermiso(b.dataset.permiso))b.remove()});document.querySelectorAll("[data-panel-permiso]").forEach(p=>{if(!tienePermiso(p.dataset.panelPermiso))p.remove()});document.querySelector(".tab-btn")?.click()}
-function config(){if(!tienePermiso("institucional"))return;const ref=doc(db,"configuracion","sitio"),f=document.getElementById("configForm");if(!f)return;onSnapshot(ref,s=>{if(!s.exists())return;const d=s.data();["nombreEscuela","alias","cbu","titularCuenta","logoUrl","infoInstitucional"].forEach(id=>{const el=document.getElementById(id); if(el) el.value=d[id]||""});document.getElementById("subtituloEscuela").value=d.subtitulo||"";document.getElementById("nombreEscuelaAdmin").textContent=d.nombreEscuela||"Los Naranjos de la Concordia D-114";if(d.logoUrl){const l=document.getElementById("logoAdmin");l.src=d.logoUrl;l.classList.remove("oculto")}});f.onsubmit=async e=>{e.preventDefault();await setDoc(ref,{nombreEscuela:document.getElementById("nombreEscuela").value.trim(),subtitulo:document.getElementById("subtituloEscuela").value.trim(),logoUrl:document.getElementById("logoUrl").value.trim(),alias:document.getElementById("alias").value.trim(),cbu:document.getElementById("cbu").value.trim(),titularCuenta:document.getElementById("titularCuenta").value.trim(),infoInstitucional:document.getElementById("infoInstitucional").value.trim(),actualizado:serverTimestamp()},{merge:true});alert("Información guardada")}}
-function objetivos(){if(!tienePermiso("objetivos"))return;const f=document.getElementById("objetivoForm"),bus=document.getElementById("buscadorObjetivos");if(!f)return;f.onsubmit=async e=>{e.preventDefault();const precio=Number(document.getElementById("precio").value),rec=Number(document.getElementById("recaudado").value||0);await addDoc(collection(db,"objetivos"),{nombre:document.getElementById("nombre").value.trim(),descripcion:document.getElementById("descripcion").value.trim(),precio,recaudado:Math.min(rec,precio),imagenUrl:document.getElementById("imagenUrl").value.trim(),urgente:document.getElementById("urgente").checked,creado:serverTimestamp()});f.reset();document.getElementById("recaudado").value=0};onSnapshot(query(collection(db,"objetivos")),s=>{objetivosCache=[];s.forEach(d=>objetivosCache.push({id:d.id,...d.data()}));renderObjetivos()});bus.oninput=renderObjetivos}
-function renderObjetivos(){const l=document.getElementById("listaObjetivos"),bus=document.getElementById("buscadorObjetivos");if(!l)return;const q=(bus?.value||"").toLowerCase();l.innerHTML="";objetivosCache.filter(o=>`${o.nombre||""} ${o.descripcion||""}`.toLowerCase().includes(q)).forEach(o=>{const precio=Number(o.precio||0),rec=Math.min(Number(o.recaudado||0),precio);const div=document.createElement("div");div.className="card";div.innerHTML=`<h3>${o.nombre}</h3><p>${o.descripcion||""}</p><p>Precio: ${formatoPesos.format(precio)}</p><p>Recaudado: ${formatoPesos.format(rec)}</p><p>Faltante: ${formatoPesos.format(Math.max(0,precio-rec))}</p><button class="btn-danger" onclick="eliminarObjetivo('${o.id}')">Eliminar</button>`;l.appendChild(div)})}
-window.eliminarObjetivo=async id=>{if(confirm("¿Eliminar objetivo?"))await deleteDoc(doc(db,"objetivos",id))}
-function donaciones(){if(!tienePermiso("objetivos"))return;const pendientes=document.getElementById("listaDonacionesPendientes"),hist=document.getElementById("historialDonacionesAdmin");if(!pendientes)return;onSnapshot(query(collection(db,"donaciones")),s=>{let ap=0,pe=0;const donantes=new Set();pendientes.innerHTML="";hist.innerHTML="";s.forEach(d=>{const x=d.data();if(x.estado==="aprobada"){ap++;donantes.add((x.nombreDonante||"").toLowerCase());hist.innerHTML=`<div class="historial-item"><strong>${x.nombreDonante}</strong> donó ${formatoPesos.format(Number(x.monto||0))} para <strong>${x.objetivoNombre}</strong> - <a href="${x.comprobanteUrl}" target="_blank">comprobante</a></div>`+hist.innerHTML}if(x.estado==="pendiente"){pe++;const div=document.createElement("div");div.className="admin-card";div.innerHTML=`<div><h3>${x.objetivoNombre}</h3><p><strong>Donante:</strong> ${x.nombreDonante}</p><p><strong>Monto:</strong> ${formatoPesos.format(Number(x.monto||0))}</p><p><a href="${x.comprobanteUrl}" target="_blank">Ver comprobante</a></p></div><div class="admin-actions"><button onclick="aprobarDonacion('${d.id}','${x.objetivoId}',${Number(x.monto||0)})">Aceptar / Comprobado</button><button class="btn-danger" onclick="rechazarDonacion('${d.id}')">Rechazar</button></div>`;pendientes.appendChild(div)}});document.getElementById("adminDonantes").textContent=donantes.size;document.getElementById("adminAprobadas").textContent=ap;document.getElementById("adminPendientes").textContent=pe;if(!pe)pendientes.innerHTML="<p>No hay donaciones pendientes.</p>";if(!ap)hist.innerHTML="<p>No hay donaciones aprobadas.</p>"})}
-window.aprobarDonacion=async(id,obj,m)=>{if(!confirm("¿Comprobaste que el dinero ingresó?"))return;await updateDoc(doc(db,"objetivos",obj),{recaudado:increment(m),actualizado:serverTimestamp()});await updateDoc(doc(db,"donaciones",id),{estado:"aprobada",aprobadoPor:usuarioActualData.email,aprobado:serverTimestamp()});alert("Donación aprobada y sumada.")};window.rechazarDonacion=async id=>{if(confirm("¿Rechazar?"))await updateDoc(doc(db,"donaciones",id),{estado:"rechazada",rechazadoPor:usuarioActualData.email,rechazado:serverTimestamp()})}
-function obra(){if(!tienePermiso("obra"))return;const f=document.getElementById("obraForm"),l=document.getElementById("listaObra");if(!f)return;f.onsubmit=async e=>{e.preventDefault();await addDoc(collection(db,"obra"),{titulo:document.getElementById("obraTitulo").value.trim(),imagenUrl:document.getElementById("obraImagenUrl").value.trim(),descripcion:document.getElementById("obraDescripcion").value.trim(),creado:serverTimestamp()});f.reset()};onSnapshot(query(collection(db,"obra")),s=>{l.innerHTML="";s.forEach(d=>{const x=d.data();l.innerHTML+=`<div class="card"><h3>${x.titulo||"Obra"}</h3><p>${x.descripcion||""}</p></div>`})})}
-function transparencia(){if(!tienePermiso("transparencia"))return;const f=document.getElementById("transparenciaForm"),l=document.getElementById("listaTransparenciaAdmin");if(!f)return;f.onsubmit=async e=>{e.preventDefault();await addDoc(collection(db,"transparencia"),{titulo:document.getElementById("transTitulo").value.trim(),monto:Number(document.getElementById("transMonto").value||0),url:document.getElementById("transUrl").value.trim(),descripcion:document.getElementById("transDescripcion").value.trim(),creado:serverTimestamp()});f.reset()};onSnapshot(query(collection(db,"transparencia")),s=>{l.innerHTML="";s.forEach(d=>{const x=d.data();l.innerHTML+=`<div class="card"><h3>${x.titulo||"Comprobante"}</h3><p>${x.descripcion||""}</p></div>`})})}
-function usuarios(){if(!tienePermiso("usuarios"))return;const f=document.getElementById("usuarioForm"),l=document.getElementById("listaUsuarios");if(!f)return;f.onsubmit=async e=>{e.preventDefault();const email=document.getElementById("usuarioEmail").value.trim().toLowerCase();await setDoc(doc(db,"adminsByEmail",email),{nombre:document.getElementById("usuarioNombre").value.trim(),email,rol:"admin",activo:true,permisos:{institucional:document.getElementById("permInstitucional").checked,objetivos:document.getElementById("permObjetivos").checked,obra:document.getElementById("permObra").checked,transparencia:document.getElementById("permTransparencia").checked,usuarios:false},creado:serverTimestamp()});f.reset();alert("Administrador autorizado.")};onSnapshot(query(collection(db,"adminsByEmail")),s=>{l.innerHTML="";s.forEach(d=>{const x=d.data();l.innerHTML+=`<div class="admin-card"><h3>${x.nombre}</h3><p>${x.email}</p><p>${x.activo?"Activo":"Bloqueado"}</p></div>`})})}
+
+const app=initializeApp(firebaseConfig);
+const auth=getAuth(app);
+const db=getFirestore(app);
+
+const SUPERADMIN_EMAIL="facundoemmert@gmail.com";
+const SUPERADMIN_UID="IArWgSKZF4a8eu0j3eoWS4el2P02";
+
+let usuarioActualData=null;
+let objetivosCache=[];
+let adminsCreados={};
+let adminsAutorizados={};
+
+const formatoPesos=new Intl.NumberFormat("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0});
+
+function tienePermiso(p){
+  return usuarioActualData&&(usuarioActualData.rol==="superadmin"||(usuarioActualData.permisos&&usuarioActualData.permisos[p]===true));
+}
+
+async function cargarUsuario(user){
+  const email=user.email.toLowerCase();
+
+  if(email===SUPERADMIN_EMAIL||user.uid===SUPERADMIN_UID){
+    usuarioActualData={
+      uid:user.uid,
+      nombre:"Facundo Emmert",
+      email,
+      rol:"superadmin",
+      activo:true,
+      permisos:{institucional:true,objetivos:true,obra:true,transparencia:true,usuarios:true}
+    };
+    await setDoc(doc(db,"admins",user.uid),{...usuarioActualData,actualizado:serverTimestamp()},{merge:true});
+    return true;
+  }
+
+  const adminUid=await getDoc(doc(db,"admins",user.uid));
+  if(adminUid.exists()&&adminUid.data().activo===true){
+    usuarioActualData=adminUid.data();
+    return true;
+  }
+
+  const inv=await getDoc(doc(db,"adminsByEmail",email));
+  if(inv.exists()&&inv.data().activo===true){
+    const d=inv.data();
+    usuarioActualData={uid:user.uid,nombre:d.nombre||email,email,rol:"admin",activo:true,permisos:d.permisos||{}};
+    await setDoc(doc(db,"admins",user.uid),{...usuarioActualData,actualizado:serverTimestamp()},{merge:true});
+    return true;
+  }
+
+  return false;
+}
+
+onAuthStateChanged(auth,async user=>{
+  if(!user) return location.href="login.html";
+  if(!await cargarUsuario(user)){
+    await signOut(auth);
+    return location.href="login.html";
+  }
+
+  document.getElementById("usuarioActual").textContent=`${usuarioActualData.nombre} - ${usuarioActualData.rol}`;
+  document.getElementById("bloqueoAdmin").classList.add("oculto");
+  document.getElementById("adminContenido").classList.remove("oculto");
+  iniciar();
+});
+
+document.getElementById("cerrarSesionBtn").onclick=async()=>{
+  await signOut(auth);
+  location.href="login.html";
+};
+
+function iniciar(){
+  tabs();
+  permisos();
+  config();
+  objetivos();
+  donaciones();
+  obra();
+  transparencia();
+  usuarios();
+}
+
+function tabs(){
+  document.querySelectorAll(".tab-btn").forEach(b=>b.onclick=()=>{
+    document.querySelectorAll(".tab-btn").forEach(x=>x.classList.remove("activo"));
+    document.querySelectorAll(".tab-panel").forEach(x=>x.classList.remove("activo"));
+    b.classList.add("activo");
+    document.getElementById(b.dataset.tab)?.classList.add("activo");
+  });
+}
+
+function permisos(){
+  document.querySelectorAll("[data-permiso]").forEach(b=>{
+    if(!tienePermiso(b.dataset.permiso)) b.remove();
+  });
+  document.querySelectorAll("[data-panel-permiso]").forEach(p=>{
+    if(!tienePermiso(p.dataset.panelPermiso)) p.remove();
+  });
+  document.querySelector(".tab-btn")?.click();
+}
+
+function config(){
+  if(!tienePermiso("institucional")) return;
+
+  const ref=doc(db,"configuracion","sitio");
+  const f=document.getElementById("configForm");
+  if(!f) return;
+
+  onSnapshot(ref,s=>{
+    if(!s.exists()) return;
+    const d=s.data();
+
+    document.getElementById("nombreEscuela").value=d.nombreEscuela||"";
+    document.getElementById("subtituloEscuela").value=d.subtitulo||"";
+    document.getElementById("logoUrl").value=d.logoUrl||"";
+    document.getElementById("alias").value=d.alias||"";
+    document.getElementById("cbu").value=d.cbu||"";
+    document.getElementById("titularCuenta").value=d.titularCuenta||"";
+    document.getElementById("infoInstitucional").value=d.infoInstitucional||"";
+
+    document.getElementById("nombreEscuelaAdmin").textContent=d.nombreEscuela||"Los Naranjos de la Concordia D-114";
+
+    if(d.logoUrl){
+      const l=document.getElementById("logoAdmin");
+      l.src=d.logoUrl;
+      l.classList.remove("oculto");
+    }
+  });
+
+  f.onsubmit=async e=>{
+    e.preventDefault();
+    await setDoc(ref,{
+      nombreEscuela:document.getElementById("nombreEscuela").value.trim(),
+      subtitulo:document.getElementById("subtituloEscuela").value.trim(),
+      logoUrl:document.getElementById("logoUrl").value.trim(),
+      alias:document.getElementById("alias").value.trim(),
+      cbu:document.getElementById("cbu").value.trim(),
+      titularCuenta:document.getElementById("titularCuenta").value.trim(),
+      infoInstitucional:document.getElementById("infoInstitucional").value.trim(),
+      actualizado:serverTimestamp()
+    },{merge:true});
+    alert("Información institucional guardada.");
+  };
+}
+
+function objetivos(){
+  if(!tienePermiso("objetivos")) return;
+
+  const f=document.getElementById("objetivoForm");
+  const bus=document.getElementById("buscadorObjetivos");
+  if(!f) return;
+
+  f.onsubmit=async e=>{
+    e.preventDefault();
+    const precio=Number(document.getElementById("precio").value);
+    const rec=Number(document.getElementById("recaudado").value||0);
+
+    await addDoc(collection(db,"objetivos"),{
+      nombre:document.getElementById("nombre").value.trim(),
+      descripcion:document.getElementById("descripcion").value.trim(),
+      precio,
+      recaudado:Math.min(rec,precio),
+      imagenUrl:document.getElementById("imagenUrl").value.trim(),
+      urgente:document.getElementById("urgente").checked,
+      creado:serverTimestamp()
+    });
+
+    f.reset();
+    document.getElementById("recaudado").value=0;
+  };
+
+  onSnapshot(query(collection(db,"objetivos")),s=>{
+    objetivosCache=[];
+    s.forEach(d=>objetivosCache.push({id:d.id,...d.data()}));
+    renderObjetivos();
+  });
+
+  bus.oninput=renderObjetivos;
+}
+
+function renderObjetivos(){
+  const l=document.getElementById("listaObjetivos");
+  const bus=document.getElementById("buscadorObjetivos");
+  if(!l) return;
+
+  const q=(bus?.value||"").toLowerCase();
+  l.innerHTML="";
+
+  objetivosCache
+    .filter(o=>`${o.nombre||""} ${o.descripcion||""}`.toLowerCase().includes(q))
+    .forEach(o=>{
+      const precio=Number(o.precio||0);
+      const rec=Math.min(Number(o.recaudado||0),precio);
+      const faltante=Math.max(0,precio-rec);
+
+      const div=document.createElement("div");
+      div.className="card";
+      div.innerHTML=`
+        ${o.imagenUrl?`<img class="imagen-admin" src="${o.imagenUrl}" alt="${o.nombre||"Objetivo"}">`:""}
+        <h3>${o.nombre||"Sin nombre"}</h3>
+        <p>${o.descripcion||"Sin descripción"}</p>
+        <p><strong>Precio:</strong> ${formatoPesos.format(precio)}</p>
+        <p><strong>Recaudado:</strong> ${formatoPesos.format(rec)}</p>
+        <p><strong>Faltante:</strong> ${formatoPesos.format(faltante)}</p>
+        <button onclick="mostrarEditorObjetivo('${o.id}')">Editar</button>
+        <button class="btn-danger" onclick="eliminarObjetivo('${o.id}')">Eliminar</button>
+
+        <div id="editor-objetivo-${o.id}" class="editor-objetivo oculto">
+          <input id="edit-nombre-${o.id}" value="${o.nombre||""}" placeholder="Nombre">
+          <input id="edit-descripcion-${o.id}" value="${o.descripcion||""}" placeholder="Descripción">
+          <input id="edit-precio-${o.id}" type="number" value="${precio}" placeholder="Precio">
+          <input id="edit-recaudado-${o.id}" type="number" value="${rec}" placeholder="Recaudado">
+          <input id="edit-imagen-${o.id}" value="${o.imagenUrl||""}" placeholder="URL de imagen">
+          <label><input id="edit-urgente-${o.id}" type="checkbox" ${o.urgente?"checked":""}> Urgente</label>
+          <button onclick="guardarObjetivo('${o.id}')">Guardar cambios</button>
+        </div>
+      `;
+      l.appendChild(div);
+    });
+}
+
+window.mostrarEditorObjetivo=id=>{
+  document.getElementById("editor-objetivo-"+id).classList.toggle("oculto");
+};
+
+window.guardarObjetivo=async id=>{
+  const precio=Number(document.getElementById("edit-precio-"+id).value);
+  const rec=Number(document.getElementById("edit-recaudado-"+id).value);
+
+  await updateDoc(doc(db,"objetivos",id),{
+    nombre:document.getElementById("edit-nombre-"+id).value.trim(),
+    descripcion:document.getElementById("edit-descripcion-"+id).value.trim(),
+    precio,
+    recaudado:Math.min(rec,precio),
+    imagenUrl:document.getElementById("edit-imagen-"+id).value.trim(),
+    urgente:document.getElementById("edit-urgente-"+id).checked,
+    actualizado:serverTimestamp()
+  });
+
+  alert("Objetivo actualizado.");
+};
+
+window.eliminarObjetivo=async id=>{
+  if(confirm("¿Eliminar objetivo?")) await deleteDoc(doc(db,"objetivos",id));
+};
+
+function donaciones(){
+  if(!tienePermiso("objetivos")) return;
+
+  const pendientes=document.getElementById("listaDonacionesPendientes");
+  const hist=document.getElementById("historialDonacionesAdmin");
+  if(!pendientes) return;
+
+  onSnapshot(query(collection(db,"donaciones")),s=>{
+    let ap=0;
+    let pe=0;
+    const donantes=new Set();
+
+    pendientes.innerHTML="";
+    hist.innerHTML="";
+
+    s.forEach(d=>{
+      const x=d.data();
+
+      if(x.estado==="aprobada"){
+        ap++;
+        donantes.add((x.nombreDonante||"").trim().toLowerCase());
+        hist.innerHTML=`
+          <div class="historial-item">
+            <strong>${x.nombreDonante}</strong> donó ${formatoPesos.format(Number(x.monto||0))} para <strong>${x.objetivoNombre}</strong>
+            ${x.comprobanteUrl?` - <a href="${x.comprobanteUrl}" target="_blank">comprobante</a>`:""}
+          </div>
+        `+hist.innerHTML;
+      }
+
+      if(x.estado==="pendiente"){
+        pe++;
+        const div=document.createElement("div");
+        div.className="admin-card";
+        div.innerHTML=`
+          <div>
+            <h3>${x.objetivoNombre}</h3>
+            <p><strong>Donante:</strong> ${x.nombreDonante}</p>
+            <p><strong>Monto:</strong> ${formatoPesos.format(Number(x.monto||0))}</p>
+            <p><strong>Objetivo:</strong> ${x.objetivoNombre}</p>
+            ${x.comprobanteUrl?`<p><a href="${x.comprobanteUrl}" target="_blank">Ver comprobante</a></p>`:""}
+          </div>
+          <div class="admin-actions">
+            <button onclick="aprobarDonacion('${d.id}','${x.objetivoId}',${Number(x.monto||0)})">Aceptar / Comprobado</button>
+            <button class="btn-danger" onclick="rechazarDonacion('${d.id}')">Rechazar</button>
+          </div>
+        `;
+        pendientes.appendChild(div);
+      }
+    });
+
+    document.getElementById("adminDonantes").textContent=donantes.size;
+    document.getElementById("adminAprobadas").textContent=ap;
+    document.getElementById("adminPendientes").textContent=pe;
+
+    if(!pe) pendientes.innerHTML="<p>No hay donaciones pendientes.</p>";
+    if(!ap) hist.innerHTML="<p>No hay donaciones aprobadas.</p>";
+  });
+}
+
+window.aprobarDonacion=async(id,obj,m)=>{
+  if(!confirm("¿Comprobaste que el dinero ingresó?")) return;
+  await updateDoc(doc(db,"objetivos",obj),{recaudado:increment(m),actualizado:serverTimestamp()});
+  await updateDoc(doc(db,"donaciones",id),{estado:"aprobada",aprobadoPor:usuarioActualData.email,aprobado:serverTimestamp()});
+  alert("Donación aprobada y sumada.");
+};
+
+window.rechazarDonacion=async id=>{
+  if(confirm("¿Rechazar?")) await updateDoc(doc(db,"donaciones",id),{estado:"rechazada",rechazadoPor:usuarioActualData.email,rechazado:serverTimestamp()});
+};
+
+function obra(){
+  if(!tienePermiso("obra")) return;
+
+  const f=document.getElementById("obraForm");
+  const l=document.getElementById("listaObra");
+  if(!f) return;
+
+  f.onsubmit=async e=>{
+    e.preventDefault();
+    await addDoc(collection(db,"obra"),{
+      titulo:document.getElementById("obraTitulo").value.trim(),
+      imagenUrl:document.getElementById("obraImagenUrl").value.trim(),
+      descripcion:document.getElementById("obraDescripcion").value.trim(),
+      creado:serverTimestamp()
+    });
+    f.reset();
+  };
+
+  onSnapshot(query(collection(db,"obra")),s=>{
+    l.innerHTML="";
+    s.forEach(d=>{
+      const x=d.data();
+      l.innerHTML+=`
+        <div class="card">
+          ${x.imagenUrl?`<img class="imagen-admin" src="${x.imagenUrl}">`:""}
+          <h3>${x.titulo||"Obra"}</h3>
+          <p>${x.descripcion||""}</p>
+        </div>
+      `;
+    });
+  });
+}
+
+function transparencia(){
+  if(!tienePermiso("transparencia")) return;
+
+  const f=document.getElementById("transparenciaForm");
+  const l=document.getElementById("listaTransparenciaAdmin");
+  if(!f) return;
+
+  f.onsubmit=async e=>{
+    e.preventDefault();
+    await addDoc(collection(db,"transparencia"),{
+      titulo:document.getElementById("transTitulo").value.trim(),
+      monto:Number(document.getElementById("transMonto").value||0),
+      url:document.getElementById("transUrl").value.trim(),
+      descripcion:document.getElementById("transDescripcion").value.trim(),
+      creado:serverTimestamp()
+    });
+    f.reset();
+  };
+
+  onSnapshot(query(collection(db,"transparencia")),s=>{
+    l.innerHTML="";
+    s.forEach(d=>{
+      const x=d.data();
+      l.innerHTML+=`
+        <div class="card">
+          <h3>${x.titulo||"Comprobante"}</h3>
+          <p>${x.descripcion||""}</p>
+          <p><strong>Monto:</strong> ${formatoPesos.format(Number(x.monto||0))}</p>
+          ${x.url?`<a href="${x.url}" target="_blank">Ver comprobante</a>`:""}
+        </div>
+      `;
+    });
+  });
+}
+
+function permisosComoTexto(permisos={}){
+  const nombres={
+    institucional:"Información institucional",
+    objetivos:"Objetivos y donaciones",
+    obra:"Actualización de obra",
+    transparencia:"Transparencia",
+    usuarios:"Administradores"
+  };
+
+  const activos=Object.entries(permisos)
+    .filter(([k,v])=>v)
+    .map(([k])=>nombres[k]||k);
+
+  return activos.length?activos.join(", "):"Sin permisos asignados";
+}
+
+function usuarios(){
+  if(!tienePermiso("usuarios")) return;
+
+  const f=document.getElementById("usuarioForm");
+  const l=document.getElementById("listaUsuarios");
+  if(!f) return;
+
+  f.onsubmit=async e=>{
+    e.preventDefault();
+    const email=document.getElementById("usuarioEmail").value.trim().toLowerCase();
+
+    await setDoc(doc(db,"adminsByEmail",email),{
+      nombre:document.getElementById("usuarioNombre").value.trim(),
+      email,
+      rol:"admin",
+      activo:true,
+      permisos:{
+        institucional:document.getElementById("permInstitucional").checked,
+        objetivos:document.getElementById("permObjetivos").checked,
+        obra:document.getElementById("permObra").checked,
+        transparencia:document.getElementById("permTransparencia").checked,
+        usuarios:false
+      },
+      creado:serverTimestamp()
+    });
+
+    f.reset();
+    alert("Administrador autorizado.");
+  };
+
+  onSnapshot(query(collection(db,"admins")),s=>{
+    adminsCreados={};
+    s.forEach(d=>{
+      const x=d.data();
+      if(x.email) adminsCreados[x.email.toLowerCase()]={id:d.id,...x};
+    });
+    renderAdmins();
+  });
+
+  onSnapshot(query(collection(db,"adminsByEmail")),s=>{
+    adminsAutorizados={};
+    s.forEach(d=>{
+      const x=d.data();
+      if(x.email) adminsAutorizados[x.email.toLowerCase()]={id:d.id,...x};
+    });
+    renderAdmins();
+  });
+}
+
+function renderAdmins(){
+  const l=document.getElementById("listaUsuarios");
+  if(!l) return;
+
+  const emails=new Set([...Object.keys(adminsAutorizados),...Object.keys(adminsCreados)]);
+  l.innerHTML="";
+
+  emails.forEach(email=>{
+    const autorizado=adminsAutorizados[email];
+    const creado=adminsCreados[email];
+    const data=creado||autorizado;
+    const esSuper=data.rol==="superadmin"||email===SUPERADMIN_EMAIL;
+    const estado=data.activo!==false;
+    const permisos=data.permisos||{};
+    const editId="edit-admin-"+email.replaceAll("@","_").replaceAll(".","_");
+
+    const div=document.createElement("div");
+    div.className="admin-card";
+    div.innerHTML=`
+      <div>
+        <h3>${data.nombre||"Sin nombre"}</h3>
+        <p><strong>Correo:</strong> ${email}</p>
+        <p><strong>Rol:</strong> ${esSuper?"Superadministrador":"Administrador"}</p>
+        <p><strong>Estado:</strong> ${estado?"Activo":"Bloqueado"}</p>
+        <p><strong>Cuenta:</strong> ${creado?"Creada en Authentication":"Autorizada, pendiente de crear cuenta"}</p>
+        <p><strong>Permisos:</strong> ${esSuper?"Acceso total":permisosComoTexto(permisos)}</p>
+      </div>
+      <div class="admin-actions">
+        ${!esSuper?`<button onclick="editarPermisosAdmin('${email}')">Editar permisos</button>`:""}
+        ${!esSuper?`<button class="btn-danger" onclick="cambiarEstadoAdmin('${email}',${estado?"false":"true"})">${estado?"Bloquear":"Activar"}</button>`:""}
+      </div>
+      ${!esSuper?`
+        <div id="${editId}" class="admin-edit oculto">
+          <label><input type="checkbox" id="edit-${email}-institucional" ${permisos.institucional?"checked":""}> Información institucional</label>
+          <label><input type="checkbox" id="edit-${email}-objetivos" ${permisos.objetivos?"checked":""}> Objetivos y donaciones</label>
+          <label><input type="checkbox" id="edit-${email}-obra" ${permisos.obra?"checked":""}> Actualización de obra</label>
+          <label><input type="checkbox" id="edit-${email}-transparencia" ${permisos.transparencia?"checked":""}> Transparencia</label>
+          <button onclick="guardarPermisosAdmin('${email}')">Guardar permisos</button>
+        </div>
+      `:""}
+    `;
+    l.appendChild(div);
+  });
+}
+
+window.editarPermisosAdmin=email=>{
+  const id="edit-admin-"+email.replaceAll("@","_").replaceAll(".","_");
+  document.getElementById(id).classList.toggle("oculto");
+};
+
+window.cambiarEstadoAdmin=async(email,estado)=>{
+  await setDoc(doc(db,"adminsByEmail",email),{activo:estado},{merge:true});
+};
+
+window.guardarPermisosAdmin=async email=>{
+  const permisos={
+    institucional:document.getElementById(`edit-${email}-institucional`).checked,
+    objetivos:document.getElementById(`edit-${email}-objetivos`).checked,
+    obra:document.getElementById(`edit-${email}-obra`).checked,
+    transparencia:document.getElementById(`edit-${email}-transparencia`).checked,
+    usuarios:false
+  };
+
+  await setDoc(doc(db,"adminsByEmail",email),{permisos,actualizado:serverTimestamp()},{merge:true});
+
+  const creado=adminsCreados[email];
+  if(creado&&creado.id){
+    await setDoc(doc(db,"admins",creado.id),{permisos,actualizado:serverTimestamp()},{merge:true});
+  }
+
+  alert("Permisos actualizados.");
+};
