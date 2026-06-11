@@ -1,12 +1,9 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, onSnapshot, query, doc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import { firebaseConfig } from "./firebase-config.js";
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const storage = getStorage(app);
-
 let objetivoSeleccionado = null;
 
 const formatoPesos = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 });
@@ -104,67 +101,45 @@ function abrirModal(o) {
 
 document.getElementById("cerrarModalDonacion").addEventListener("click", () => document.getElementById("modalDonacion").classList.add("oculto"));
 
-async function subirComprobante(file) {
-  const tiposPermitidos = ["application/pdf", "image/jpeg", "image/png", "image/webp", "image/gif"];
-  const maxBytes = 5 * 1024 * 1024;
-
-  if (!file) throw new Error("Falta el archivo del comprobante.");
-  if (!tiposPermitidos.includes(file.type)) throw new Error("El comprobante debe ser imagen o PDF.");
-  if (file.size > maxBytes) throw new Error("El comprobante supera los 5 MB.");
-
-  const nombreSeguro = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const ruta = `comprobantes/${Date.now()}_${nombreSeguro}`;
-  const storageRef = ref(storage, ruta);
-
-  await uploadBytes(storageRef, file);
-  return await getDownloadURL(storageRef);
-}
-
 document.getElementById("donacionForm").addEventListener("submit", async e => {
   e.preventDefault();
 
-  const boton = document.getElementById("enviarDonacionBtn");
-  const n = document.getElementById("donanteNombre").value.trim();
-  const m = Number(document.getElementById("donacionMonto").value);
-  const archivo = document.getElementById("donacionComprobanteArchivo").files[0];
+  const nombre = document.getElementById("donanteNombre").value.trim();
+  const apellido = document.getElementById("donanteApellido").value.trim();
+  const dni = document.getElementById("donanteDni").value.trim();
+  const monto = Number(document.getElementById("donacionMonto").value);
+  const numeroComprobante = document.getElementById("numeroComprobante").value.trim();
+  const declara = document.getElementById("declaraTransferencia").checked;
 
   if (!objetivoSeleccionado) return alert("No se seleccionó objetivo.");
-  if (!n) return alert("El nombre y apellido son obligatorios.");
-  if (!m || m <= 0) return alert("Ingresá un monto válido.");
-  if (!archivo) return alert("El comprobante es obligatorio.");
-  if (m > objetivoSeleccionado.faltante) return alert("El monto supera lo que falta para este objetivo.");
+  if (!nombre) return alert("El nombre es obligatorio.");
+  if (!apellido) return alert("El apellido es obligatorio.");
+  if (!dni) return alert("El DNI es obligatorio.");
+  if (!monto || monto <= 0) return alert("Ingresá un monto válido.");
+  if (!declara) return alert("Debés declarar que realizaste la transferencia.");
+  if (monto > objetivoSeleccionado.faltante) return alert("El monto supera lo que falta para este objetivo.");
 
-  try {
-    boton.disabled = true;
-    boton.textContent = "Subiendo comprobante...";
+  await addDoc(collection(db, "donaciones"), {
+    objetivoId: objetivoSeleccionado.id,
+    objetivoNombre: objetivoSeleccionado.nombre,
+    monto,
+    nombreDonante: nombre,
+    apellidoDonante: apellido,
+    dniDonante: dni,
+    nombreCompletoDonante: `${nombre} ${apellido}`,
+    numeroComprobante,
+    declaraTransferencia: true,
+    estado: "pendiente",
+    creado: serverTimestamp()
+  });
 
-    const comprobanteUrl = await subirComprobante(archivo);
-
-    await addDoc(collection(db, "donaciones"), {
-      objetivoId: objetivoSeleccionado.id,
-      objetivoNombre: objetivoSeleccionado.nombre,
-      monto: m,
-      nombreDonante: n,
-      comprobanteUrl,
-      comprobanteNombre: archivo.name,
-      comprobanteTipo: archivo.type,
-      estado: "pendiente",
-      creado: serverTimestamp()
-    });
-
-    alert("Comprobante enviado. La donación queda pendiente hasta verificación.");
-    document.getElementById("modalDonacion").classList.add("oculto");
-  } catch (error) {
-    alert(error.message || "No se pudo subir el comprobante.");
-  } finally {
-    boton.disabled = false;
-    boton.textContent = "Enviar comprobante para revisión";
-  }
+  alert("Donación enviada para verificación. El equipo administrador revisará el ingreso.");
+  document.getElementById("modalDonacion").classList.add("oculto");
 });
 
 function renderDonacionesPublicas(donaciones) {
   const aprobadas = donaciones.filter(d => d.estado === "aprobada");
-  const donantesUnicos = new Set(aprobadas.map(d => (d.nombreDonante || "").trim().toLowerCase()).filter(Boolean));
+  const donantesUnicos = new Set(aprobadas.map(d => (d.dniDonante || d.nombreCompletoDonante || d.nombreDonante || "").trim().toLowerCase()).filter(Boolean));
   document.getElementById("cantidadDonantes").textContent = donantesUnicos.size;
   document.getElementById("cantidadDonaciones").textContent = aprobadas.length;
 
@@ -185,7 +160,8 @@ function renderDonacionesPublicas(donaciones) {
   const historial = document.getElementById("historialDonaciones");
   historial.innerHTML = aprobadas.length ? "" : "<p>Todavía no hay donaciones aprobadas.</p>";
   aprobadas.slice().reverse().forEach(d => {
-    historial.innerHTML += `<div class="historial-item"><strong>${d.nombreDonante}</strong> donó ${formatoPesos.format(Number(d.monto || 0))} para <strong>${d.objetivoNombre}</strong></div>`;
+    const nombre = d.nombreCompletoDonante || `${d.nombreDonante || ""} ${d.apellidoDonante || ""}`.trim() || "Donante";
+    historial.innerHTML += `<div class="historial-item"><strong>${nombre}</strong> donó ${formatoPesos.format(Number(d.monto || 0))} para <strong>${d.objetivoNombre}</strong></div>`;
   });
 }
 

@@ -185,6 +185,30 @@ function limpiarTexto(valor){
   return String(valor||"").replaceAll('"',"&quot;").replaceAll("<","&lt;").replaceAll(">","&gt;");
 }
 
+function cerrarModalAdmin(){
+  const modal=document.getElementById("modalAdminEdicion");
+  if(modal) modal.remove();
+}
+
+function crearModalAdmin(titulo, contenidoHtml){
+  cerrarModalAdmin();
+
+  const modal=document.createElement("div");
+  modal.id="modalAdminEdicion";
+  modal.className="modal";
+  modal.innerHTML=`
+    <div class="modal-card modal-admin-card">
+      <button class="modal-cerrar" type="button" onclick="cerrarModalAdmin()">×</button>
+      <h2>${titulo}</h2>
+      ${contenidoHtml}
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+}
+
+window.cerrarModalAdmin=cerrarModalAdmin;
+
 function renderObjetivos(){
   const l=document.getElementById("listaObjetivos");
   const bus=document.getElementById("buscadorObjetivos");
@@ -214,41 +238,48 @@ function renderObjetivos(){
         <p><strong>Faltante:</strong> ${formatoPesos.format(faltante)}</p>
         <p>${completado?"✅ Objetivo completado":"Objetivo abierto"}</p>
 
-        <button onclick="mostrarEditorObjetivo('${o.id}')">Editar datos</button>
+        <button onclick="abrirEditorObjetivo('${o.id}')">Editar datos</button>
         <button class="btn-danger" onclick="eliminarObjetivo('${o.id}')">Eliminar</button>
-
-        <div id="editor-objetivo-${o.id}" class="editor-objetivo oculto">
-          <h3>Editar objetivo</h3>
-
-          <label>Nombre</label>
-          <input id="edit-nombre-${o.id}" value="${limpiarTexto(o.nombre)}" placeholder="Nombre">
-
-          <label>Descripción</label>
-          <input id="edit-descripcion-${o.id}" value="${limpiarTexto(o.descripcion)}" placeholder="Descripción">
-
-          <label>Precio actualizado</label>
-          <input id="edit-precio-${o.id}" type="number" value="${precio}" placeholder="Precio">
-
-          <label>URL de imagen</label>
-          <input id="edit-imagen-${o.id}" value="${limpiarTexto(o.imagenUrl)}" placeholder="URL de imagen">
-
-          <label><input id="edit-urgente-${o.id}" type="checkbox" ${o.urgente?"checked":""}> Marcar como urgente</label>
-
-          <div class="campo-completo">
-            <p><strong>Recaudado:</strong> ${formatoPesos.format(rec)} — este dato no se edita manualmente.</p>
-            <p><strong>Faltante actual:</strong> ${formatoPesos.format(faltante)}</p>
-          </div>
-
-          <button onclick="guardarObjetivo('${o.id}')">Guardar cambios</button>
-          <button onclick="mostrarEditorObjetivo('${o.id}')">Cancelar</button>
-        </div>
       `;
       l.appendChild(div);
     });
 }
 
-window.mostrarEditorObjetivo=id=>{
-  document.getElementById("editor-objetivo-"+id).classList.toggle("oculto");
+window.abrirEditorObjetivo=id=>{
+  const o=objetivosCache.find(obj=>obj.id===id);
+  if(!o) return alert("No se encontró el objetivo.");
+
+  const precio=Number(o.precio||0);
+  const rec=Math.min(Number(o.recaudado||0),precio);
+  const faltante=Math.max(0,precio-rec);
+
+  crearModalAdmin("Editar objetivo", `
+    <div class="form-modal-admin">
+      <label>Nombre</label>
+      <input id="edit-nombre-${id}" value="${limpiarTexto(o.nombre)}" placeholder="Nombre">
+
+      <label>Descripción</label>
+      <input id="edit-descripcion-${id}" value="${limpiarTexto(o.descripcion)}" placeholder="Descripción">
+
+      <label>Precio actualizado</label>
+      <input id="edit-precio-${id}" type="number" value="${precio}" placeholder="Precio">
+
+      <label>URL de imagen</label>
+      <input id="edit-imagen-${id}" value="${limpiarTexto(o.imagenUrl)}" placeholder="URL de imagen">
+
+      <label class="check-admin"><input id="edit-urgente-${id}" type="checkbox" ${o.urgente?"checked":""}> Marcar como urgente</label>
+
+      <div class="campo-completo">
+        <p><strong>Recaudado:</strong> ${formatoPesos.format(rec)} — este dato no se edita manualmente.</p>
+        <p><strong>Faltante actual:</strong> ${formatoPesos.format(faltante)}</p>
+      </div>
+
+      <div class="acciones-modal">
+        <button onclick="guardarObjetivo('${id}')">Guardar cambios</button>
+        <button type="button" onclick="cerrarModalAdmin()">Cancelar</button>
+      </div>
+    </div>
+  `);
 };
 
 window.guardarObjetivo=async id=>{
@@ -276,6 +307,7 @@ window.guardarObjetivo=async id=>{
   });
 
   alert("Objetivo actualizado. No se modificó lo recaudado.");
+  cerrarModalAdmin();
 };
 
 window.eliminarObjetivo=async id=>{
@@ -299,14 +331,15 @@ function donaciones(){
 
     s.forEach(d=>{
       const x=d.data();
+      const nombre=x.nombreCompletoDonante || `${x.nombreDonante||""} ${x.apellidoDonante||""}`.trim() || "Donante";
 
       if(x.estado==="aprobada"){
         ap++;
-        donantes.add((x.nombreDonante||"").trim().toLowerCase());
+        donantes.add((x.dniDonante||nombre).trim().toLowerCase());
         hist.innerHTML=`
           <div class="historial-item">
-            <strong>${x.nombreDonante}</strong> donó ${formatoPesos.format(Number(x.monto||0))} para <strong>${x.objetivoNombre}</strong>
-            ${x.comprobanteUrl?` - <a href="${x.comprobanteUrl}" target="_blank">comprobante</a>`:""}
+            <strong>${nombre}</strong> - DNI ${x.dniDonante||"sin cargar"} - donó ${formatoPesos.format(Number(x.monto||0))} para <strong>${x.objetivoNombre}</strong>
+            ${x.numeroComprobante?` - Ref.: ${x.numeroComprobante}`:""}
           </div>
         `+hist.innerHTML;
       }
@@ -318,10 +351,13 @@ function donaciones(){
         div.innerHTML=`
           <div>
             <h3>${x.objetivoNombre}</h3>
-            <p><strong>Donante:</strong> ${x.nombreDonante}</p>
+            <p><strong>Nombre:</strong> ${x.nombreDonante||""}</p>
+            <p><strong>Apellido:</strong> ${x.apellidoDonante||""}</p>
+            <p><strong>DNI:</strong> ${x.dniDonante||""}</p>
             <p><strong>Monto:</strong> ${formatoPesos.format(Number(x.monto||0))}</p>
             <p><strong>Objetivo:</strong> ${x.objetivoNombre}</p>
-            ${x.comprobanteUrl?`<p><a href="${x.comprobanteUrl}" target="_blank">Ver comprobante</a></p>`:""}
+            ${x.numeroComprobante?`<p><strong>N° comprobante/ref.:</strong> ${x.numeroComprobante}</p>`:""}
+            <p><strong>Declaración:</strong> ${x.declaraTransferencia?"Realizó la transferencia":"No declarada"}</p>
           </div>
           <div class="admin-actions">
             <button onclick="aprobarDonacion('${d.id}','${x.objetivoId}',${Number(x.monto||0)})">Aceptar / Comprobado</button>
@@ -379,37 +415,40 @@ function obra(){
       const div=document.createElement("div");
       div.className="card";
       div.innerHTML=`
-        <div id="vista-obra-${id}">
-          ${x.imagenUrl?`<img class="imagen-admin" src="${x.imagenUrl}">`:""}
-          <h3>${x.titulo||"Obra"}</h3>
-          <p>${x.descripcion||""}</p>
-          <button onclick="mostrarEditorObra('${id}')">Editar</button>
-          <button class="btn-danger" onclick="eliminarObra('${id}')">Eliminar</button>
-        </div>
-
-        <div id="editor-obra-${id}" class="editor-objetivo oculto">
-          <h3>Editar actualización de obra</h3>
-
-          <label>Título</label>
-          <input id="edit-obra-titulo-${id}" value="${limpiarTexto(x.titulo||"")}" placeholder="Título">
-
-          <label>URL de foto</label>
-          <input id="edit-obra-imagen-${id}" value="${limpiarTexto(x.imagenUrl||"")}" placeholder="URL de foto">
-
-          <label>Descripción</label>
-          <textarea id="edit-obra-descripcion-${id}" placeholder="Descripción">${x.descripcion||""}</textarea>
-
-          <button onclick="guardarObra('${id}')">Guardar cambios</button>
-          <button onclick="mostrarEditorObra('${id}')">Cancelar</button>
-        </div>
+        ${x.imagenUrl?`<img class="imagen-admin" src="${x.imagenUrl}">`:""}
+        <h3>${x.titulo||"Obra"}</h3>
+        <p>${x.descripcion||""}</p>
+        <button onclick="abrirEditorObra('${id}')">Editar</button>
+        <button class="btn-danger" onclick="eliminarObra('${id}')">Eliminar</button>
       `;
       l.appendChild(div);
     });
   });
 }
 
-window.mostrarEditorObra=id=>{
-  document.getElementById("editor-obra-"+id).classList.toggle("oculto");
+window.abrirEditorObra=async id=>{
+  const snap=await getDoc(doc(db,"obra",id));
+  if(!snap.exists()) return alert("No se encontró la actualización de obra.");
+
+  const x=snap.data();
+
+  crearModalAdmin("Editar actualización de obra", `
+    <div class="form-modal-admin">
+      <label>Título</label>
+      <input id="edit-obra-titulo-${id}" value="${limpiarTexto(x.titulo||"")}" placeholder="Título">
+
+      <label>URL de foto</label>
+      <input id="edit-obra-imagen-${id}" value="${limpiarTexto(x.imagenUrl||"")}" placeholder="URL de foto">
+
+      <label>Descripción</label>
+      <textarea id="edit-obra-descripcion-${id}" placeholder="Descripción">${x.descripcion||""}</textarea>
+
+      <div class="acciones-modal">
+        <button onclick="guardarObra('${id}')">Guardar cambios</button>
+        <button type="button" onclick="cerrarModalAdmin()">Cancelar</button>
+      </div>
+    </div>
+  `);
 };
 
 window.guardarObra=async id=>{
@@ -420,6 +459,7 @@ window.guardarObra=async id=>{
     actualizado:serverTimestamp()
   });
   alert("Actualización de obra editada.");
+  cerrarModalAdmin();
 };
 
 window.eliminarObra=async id=>{
