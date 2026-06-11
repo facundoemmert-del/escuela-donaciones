@@ -30,20 +30,18 @@
   <button class="tab-btn" data-tab="tab-objetivos" data-permiso="objetivos">Objetivos</button>
   <button class="tab-btn" data-tab="tab-obra" data-permiso="obra">Actualización de obra</button>
   <button class="tab-btn" data-tab="tab-transparencia" data-permiso="transparencia">Transparencia</button>
-  <button class="tab-btn" data-tab="tab-usuarios" data-permiso="usuarios">Usuarios</button>
+  <button class="tab-btn" data-tab="tab-usuarios" data-permiso="usuarios">Administradores</button>
 </div>
 
 <main class="admin-main">
 
   <section id="tab-config" class="tab-panel activo" data-panel-permiso="institucional">
     <h2>Información institucional</h2>
-
     <form id="configForm" class="form-admin">
       <input id="nombreEscuela" placeholder="Nombre de la escuela">
       <input id="subtituloEscuela" placeholder="Subtítulo de la campaña">
       <input id="logoUrl" placeholder="URL del logo">
-      <textarea id="infoInstitucional" placeholder="Información de la escuela, historia, ubicación, necesidad de la nueva escuela, cantidad de estudiantes, contexto comunitario, etc."></textarea>
-
+      <textarea id="infoInstitucional" placeholder="Información de la escuela, historia, ubicación, necesidad de la nueva escuela, etc."></textarea>
       <button type="button" id="guardarLogoUrl">Guardar logo por URL</button>
       <button type="submit">Guardar información institucional</button>
     </form>
@@ -51,7 +49,6 @@
 
   <section id="tab-objetivos" class="tab-panel" data-panel-permiso="objetivos">
     <h2>Objetivos</h2>
-
     <div class="barra-admin">
       <input id="buscadorObjetivos" placeholder="Buscar objetivo por nombre o descripción...">
     </div>
@@ -62,12 +59,7 @@
       <input id="precio" type="number" placeholder="Precio total del objetivo" required>
       <input id="recaudado" type="number" placeholder="Monto ya recaudado" value="0" required>
       <input id="imagenUrl" placeholder="URL de imagen del objetivo">
-
-      <label class="check-admin">
-        <input id="urgente" type="checkbox">
-        Marcar como urgente
-      </label>
-
+      <label class="check-admin"><input id="urgente" type="checkbox"> Marcar como urgente</label>
       <button type="submit">Agregar objetivo</button>
     </form>
 
@@ -77,20 +69,17 @@
 
   <section id="tab-obra" class="tab-panel" data-panel-permiso="obra">
     <h2>Actualización de obra</h2>
-
     <form id="obraForm" class="form-admin">
       <input id="obraTitulo" placeholder="Título. Ej: Colocación de aberturas">
       <input id="obraImagenUrl" placeholder="URL de la foto de obra">
       <textarea id="obraDescripcion" placeholder="Descripción del avance de obra"></textarea>
       <button type="submit">Agregar actualización de obra</button>
     </form>
-
     <div id="listaObra"></div>
   </section>
 
   <section id="tab-transparencia" class="tab-panel" data-panel-permiso="transparencia">
     <h2>Transparencia</h2>
-
     <form id="transparenciaForm" class="form-admin">
       <input id="transTitulo" placeholder="Título. Ej: Factura compra de puerta">
       <input id="transMonto" type="number" placeholder="Monto">
@@ -98,13 +87,12 @@
       <textarea id="transDescripcion" placeholder="Descripción o detalle del gasto"></textarea>
       <button type="submit">Agregar comprobante</button>
     </form>
-
     <div id="listaTransparenciaAdmin"></div>
   </section>
 
   <section id="tab-usuarios" class="tab-panel" data-panel-permiso="usuarios">
     <h2>Administradores y permisos</h2>
-    <p class="texto-ayuda">Solo el superadministrador puede ver esta sección. Agregá el correo del nuevo administrador y marcá los bloques a los que podrá acceder.</p>
+    <p class="texto-ayuda">Solo el superadministrador ve esta sección. Agregá el correo del nuevo administrador y marcá los bloques que puede usar.</p>
 
     <form id="usuarioForm" class="form-admin">
       <input id="usuarioNombre" placeholder="Nombre del administrador" required>
@@ -115,7 +103,7 @@
       <label class="check-admin"><input id="permObra" type="checkbox"> Actualización de obra</label>
       <label class="check-admin"><input id="permTransparencia" type="checkbox"> Transparencia</label>
 
-      <button type="submit">Agregar administrador autorizado</button>
+      <button type="submit">Autorizar administrador</button>
     </form>
 
     <div id="listaUsuarios"></div>
