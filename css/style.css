@@ -214,7 +214,7 @@ footer {
   margin-bottom: 8px;
 }
 
-/* ADMIN */
+/* ADMIN GENERAL */
 .pantalla-bloqueo {
   min-height: 100vh;
   display: flex;
@@ -356,6 +356,147 @@ button:disabled {
   grid-column: 1 / -1;
 }
 
+/* ADMINISTRADORES - MEJORA VISUAL */
+#tab-usuarios h2 {
+  font-size: 26px;
+  margin-bottom: 6px;
+}
+
+.nota-admin {
+  background: #fff7df;
+  border-left: 5px solid #d98c00;
+  padding: 14px 16px;
+  border-radius: 12px;
+  margin: 12px 0 18px;
+  line-height: 1.4;
+  box-shadow: 0 2px 10px rgba(0,0,0,.06);
+}
+
+.usuarios-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+.usuarios-form > button {
+  grid-column: 1 / -1;
+  justify-self: start;
+  min-width: 260px;
+}
+
+.permisos-grid {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.permiso-card {
+  background: #f4f7fa;
+  border: 1px solid #d9e1e8;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: bold;
+  min-height: 62px;
+  transition: .2s;
+}
+
+.permiso-card:hover {
+  background: #edf5fb;
+  border-color: #1f5a8a;
+}
+
+.permiso-card input {
+  width: auto;
+  transform: scale(1.2);
+}
+
+#listaUsuarios {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 14px;
+}
+
+.admin-card {
+  background: white;
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 3px 14px rgba(0,0,0,.12);
+  border-left: 7px solid #1f5a8a;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-card h3 {
+  font-size: 21px;
+  margin-bottom: 4px;
+  color: #123;
+}
+
+.admin-card p {
+  margin: 4px 0;
+  line-height: 1.35;
+}
+
+.admin-card strong {
+  color: #0f4f2f;
+}
+
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.admin-actions button {
+  margin: 0;
+}
+
+.admin-edit {
+  background: #f4f7fa;
+  border-radius: 14px;
+  padding: 15px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  border: 1px solid #d9e1e8;
+}
+
+.admin-edit label {
+  background: white;
+  padding: 11px;
+  border-radius: 10px;
+  border: 1px solid #d9e1e8;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: bold;
+}
+
+.admin-edit input {
+  width: auto;
+  transform: scale(1.15);
+}
+
+.admin-edit button {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+@media (max-width: 900px) {
+  #listaUsuarios,
+  .permisos-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 800px) {
   .hero-contenido,
   .admin-header {
@@ -373,7 +514,14 @@ button:disabled {
 
   .form-admin,
   .editor-objetivo,
-  .grilla-publica {
+  .grilla-publica,
+  .usuarios-form,
+  .admin-edit {
     grid-template-columns: 1fr;
+  }
+
+  .usuarios-form > button {
+    width: 100%;
+    min-width: auto;
   }
 }
