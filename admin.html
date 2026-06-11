@@ -92,20 +92,27 @@
 
   <section id="tab-usuarios" class="tab-panel" data-panel-permiso="usuarios">
     <h2>Administradores y permisos</h2>
-    <p class="texto-ayuda">Solo el superadministrador ve esta sección. Agregá el correo del nuevo administrador y marcá los bloques que puede usar.</p>
 
-    <form id="usuarioForm" class="form-admin">
+    <div class="nota-admin">
+      <strong>Importante:</strong> por seguridad, la contraseña la crea cada administrador desde <b>login.html</b> usando “Crear cuenta autorizada”. 
+      Desde este panel vos autorizás el correo y elegís qué bloques puede ver.
+    </div>
+
+    <form id="usuarioForm" class="form-admin usuarios-form">
       <input id="usuarioNombre" placeholder="Nombre del administrador" required>
       <input id="usuarioEmail" type="email" placeholder="Correo electrónico" required>
 
-      <label class="check-admin"><input id="permInstitucional" type="checkbox"> Información institucional</label>
-      <label class="check-admin"><input id="permObjetivos" type="checkbox"> Objetivos</label>
-      <label class="check-admin"><input id="permObra" type="checkbox"> Actualización de obra</label>
-      <label class="check-admin"><input id="permTransparencia" type="checkbox"> Transparencia</label>
+      <div class="permisos-grid">
+        <label class="permiso-card"><input id="permInstitucional" type="checkbox"> <span>Información institucional</span></label>
+        <label class="permiso-card"><input id="permObjetivos" type="checkbox"> <span>Objetivos</span></label>
+        <label class="permiso-card"><input id="permObra" type="checkbox"> <span>Actualización de obra</span></label>
+        <label class="permiso-card"><input id="permTransparencia" type="checkbox"> <span>Transparencia</span></label>
+      </div>
 
       <button type="submit">Autorizar administrador</button>
     </form>
 
+    <h3>Administradores autorizados</h3>
     <div id="listaUsuarios"></div>
   </section>
 
