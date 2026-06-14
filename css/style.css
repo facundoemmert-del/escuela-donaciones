@@ -865,7 +865,31 @@ button:active {
 .hero .logo-principal {
   background: rgba(255,255,255,.95);
 }
+/* Vista previa del banner en admin */
+.preview-banner-admin {
+  width: 100%;
+  min-height: 130px;
+  border: 1px dashed #b9c7d4;
+  border-radius: 18px;
+  background: #f8fbfd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
 
+.preview-banner-admin img {
+  width: 100%;
+  height: 180px;
+  object-fit: contain;
+  background: #0f4f2f;
+  display: block;
+}
+
+.preview-banner-admin p {
+  color: #526b80;
+  font-weight: 700;
+}
 
 
 /* En celular mantiene el banner prolijo */
