@@ -882,11 +882,7 @@ button:active {
 
 /* Capa oscura suave en admin para leer el texto, sin tapar la imagen */
 .admin-header::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,.36);
-  z-index: 0;
+  display: none !important;
 }
 
 .admin-header > * {
@@ -915,6 +911,7 @@ button:active {
     height: 320px !important;
     background-size: cover !important;
     background-position: center center !important;
+  background-color: transparent !important;
 }
 
 /* Texto abajo a la izquierda */
