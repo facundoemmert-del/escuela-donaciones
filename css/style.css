@@ -837,3 +837,69 @@ button:active {
 .lightbox-info .tipo-media-badge{display:none!important}
 @media(max-width:850px){.lightbox-flecha{width:44px;height:44px;font-size:34px}.lightbox-prev{left:8px}.lightbox-next{right:8px}}
 
+
+/* ZIP 36 - Banner público sin filtro verde + vista previa en admin */
+
+
+/* Banner público: muestra la imagen original, completa y sin filtro verde */
+.hero {
+  background-color: #0f4f2f !important;
+  background-size: contain !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+}
+
+/* Quita capas visuales que teñían la imagen */
+.hero::after {
+  display: none !important;
+}
+
+/* Mejora lectura del texto sin teñir toda la imagen */
+.hero-contenido > div {
+  background: rgba(0, 0, 0, .28);
+  padding: 14px 18px;
+  border-radius: 16px;
+  backdrop-filter: blur(2px);
+}
+
+.hero .logo-principal {
+  background: rgba(255,255,255,.95);
+}
+
+/* Vista previa del banner en admin */
+.preview-banner-admin {
+  width: 100%;
+  min-height: 130px;
+  border: 1px dashed #b9c7d4;
+  border-radius: 18px;
+  background: #f8fbfd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.preview-banner-admin img {
+  width: 100%;
+  height: 180px;
+  object-fit: contain;
+  background: #0f4f2f;
+  display: block;
+}
+
+.preview-banner-admin p {
+  color: #526b80;
+  font-weight: 700;
+}
+
+/* En celular mantiene el banner prolijo */
+@media(max-width: 800px) {
+  .hero {
+    min-height: 240px !important;
+  }
+
+  .hero-contenido > div {
+    padding: 12px 14px;
+  }
+}
+
