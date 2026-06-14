@@ -52,6 +52,10 @@
       <input id="logoUrl" placeholder="https://.../assets/logo.png">
     </div>
     <div class="campo-form">
+      <label>URL de imagen para banner público</label>
+      <input id="bannerUrl" placeholder="https://.../assets/banner.jpg">
+    </div>
+    <div class="campo-form">
       <label>Alias</label>
       <input id="alias" placeholder="alias.de.donacion">
     </div>
@@ -112,7 +116,13 @@
   <h2>Actualización de obra</h2>
   <form id="obraForm" class="form-admin">
     <input id="obraTitulo" placeholder="Título">
-    <input id="obraImagenUrl" placeholder="URL de foto">
+    <input id="obraEtapa" placeholder="Nombre del grupo o etapa. Ej: Cerramiento del terreno / Baños / Aulas">
+    <select id="obraTipoMedia">
+      <option value="imagen">Imagen</option>
+      <option value="youtube">Video de YouTube</option>
+      <option value="video">Video directo MP4</option>
+    </select>
+    <input id="obraImagenUrl" placeholder="URL de imagen o video">
     <textarea id="obraDescripcion" placeholder="Descripción"></textarea>
     <button type="submit">Agregar actualización</button>
   </form>
