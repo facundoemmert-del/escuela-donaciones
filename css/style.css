@@ -936,3 +936,119 @@ button:active {
     font-size: 18px;
     text-shadow: 0 3px 10px rgba(0,0,0,.6);
 }
+
+
+/* ZIP 38 - Etapas de obra en cuadrícula */
+
+
+/* Las etapas se muestran una al lado de la otra */
+#galeriaObra {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)) !important;
+  gap: 26px !important;
+  align-items: start !important;
+  max-width: 1180px !important;
+  margin: 0 auto !important;
+}
+
+/* Cada etapa queda como una tarjeta grande */
+.bloque-etapa-obra {
+  margin: 0 !important;
+  background: rgba(255,255,255,.78);
+  border: 1px solid #dce5ed;
+  border-radius: 24px;
+  padding: 18px;
+  box-shadow: 0 16px 40px rgba(18,38,63,.09);
+}
+
+/* Encabezado de cada etapa */
+.etapa-obra-header {
+  margin-bottom: 16px !important;
+}
+
+.etapa-obra-header span {
+  display: inline-block !important;
+  background: linear-gradient(135deg, #0f4f2f, #159447) !important;
+  color: #fff !important;
+  padding: 9px 16px !important;
+  border-radius: 999px !important;
+  font-size: 14px !important;
+  font-weight: 900 !important;
+  letter-spacing: .5px !important;
+  text-transform: uppercase !important;
+}
+
+/* Dentro de cada etapa, las fotos se acomodan en mini cuadrícula */
+.bloque-etapa-obra .galeria-etapa {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+  gap: 14px !important;
+}
+
+/* Tarjetas más compactas dentro de cada etapa */
+.bloque-etapa-obra .obra-card-pro {
+  border-radius: 18px !important;
+  overflow: hidden !important;
+  box-shadow: 0 10px 24px rgba(18,38,63,.10) !important;
+}
+
+/* Miniaturas más pequeñas */
+.bloque-etapa-obra .obra-imagen-wrap {
+  height: 145px !important;
+  max-height: 145px !important;
+}
+
+.bloque-etapa-obra .obra-imagen-wrap img,
+.bloque-etapa-obra .obra-imagen-wrap video,
+.bloque-etapa-obra .obra-imagen-wrap iframe {
+  height: 145px !important;
+  max-height: 145px !important;
+  object-fit: cover !important;
+}
+
+/* Texto compacto */
+.bloque-etapa-obra .obra-card-info {
+  padding: 12px !important;
+}
+
+.bloque-etapa-obra .obra-card-info h4 {
+  font-size: 14px !important;
+  margin: 0 0 6px 0 !important;
+  line-height: 1.25 !important;
+}
+
+.bloque-etapa-obra .obra-card-info p {
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+  margin: 0 !important;
+}
+
+.bloque-etapa-obra .btn-ver-grande {
+  font-size: 11px !important;
+  padding: 7px 11px !important;
+  margin-top: 10px !important;
+}
+
+/* En pantallas grandes permite 2 o 3 etapas por fila */
+@media(min-width: 1200px) {
+  #galeriaObra {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* En celular vuelve a una sola columna */
+@media(max-width: 780px) {
+  #galeriaObra {
+    grid-template-columns: 1fr !important;
+  }
+
+  .bloque-etapa-obra .galeria-etapa {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media(max-width: 480px) {
+  .bloque-etapa-obra .galeria-etapa {
+    grid-template-columns: 1fr !important;
+  }
+}
