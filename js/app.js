@@ -271,6 +271,7 @@ function abrirLightboxObra(item){
       </div>
       <div class="lightbox-info">
   <h3>${item.titulo || "Actualización de obra"}</h3>
+   <p> ${item.etapa || "Avances generales"}</p>
   <p>${item.descripcion || ""}</p>
 </div>
   `;
