@@ -9,6 +9,36 @@ let objetivoSeleccionado = null;
 const formatoPesos = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 });
 
 function calcularPorcentaje(r, p) { if (!p || p <= 0) return 0; return Math.min(100, Math.round((r / p) * 100)); }
+
+function obtenerYoutubeIdPublico(url){
+  if(!url) return "";
+  const patrones=[
+    /youtu\.be\/([^?&]+)/,
+    /youtube\.com\/watch\?v=([^?&]+)/,
+    /youtube\.com\/embed\/([^?&]+)/,
+    /youtube\.com\/shorts\/([^?&]+)/
+  ];
+  for(const p of patrones){
+    const m=url.match(p);
+    if(m&&m[1]) return m[1];
+  }
+  return "";
+}
+
+function renderMediaPublica(url,tipo,titulo=""){
+  if(!url) return "";
+  const tipoReal=tipo||"imagen";
+  if(tipoReal==="youtube"){
+    const id=obtenerYoutubeIdPublico(url);
+    if(!id) return `<a href="${url}" target="_blank">Ver video</a>`;
+    return `<iframe src="https://www.youtube.com/embed/${id}" title="${titulo}" allowfullscreen></iframe>`;
+  }
+  if(tipoReal==="video"){
+    return `<video src="${url}" controls></video>`;
+  }
+  return `<img src="${url}" alt="${titulo}">`;
+}
+
 function textoAHtml(t) { if (!t) return ""; return t.split("\n").map(l => `<p>${l}</p>`).join(""); }
 
 function formatearFechaPublica(valor){
@@ -68,6 +98,18 @@ onSnapshot(doc(db, "configuracion", "sitio"), s => {
   const l = document.getElementById("logoPublico");
   const f = document.getElementById("logoFooter");
   if (d.logoUrl) { l.src = d.logoUrl; f.src = d.logoUrl; l.classList.remove("oculto"); f.classList.remove("oculto"); }
+
+  const hero = document.querySelector(".hero");
+  if (hero) {
+    if (d.bannerUrl) {
+      hero.style.backgroundImage =
+        `linear-gradient(135deg, rgba(7, 55, 32, .82), rgba(15, 73, 115, .82)), url("${d.bannerUrl}")`;
+      hero.style.backgroundSize = "cover";
+      hero.style.backgroundPosition = "center";
+    } else {
+      hero.style.backgroundImage = "";
+    }
+  }
 });
 
 function renderObjetivos(objs) {
@@ -191,16 +233,132 @@ onSnapshot(query(collection(db, "donaciones")), snap => {
   renderDonacionesPublicas(a);
 });
 
+
+function obtenerVistosObra(){
+  try {
+    return JSON.parse(localStorage.getItem("obraVistas") || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function guardarVistoObra(id){
+  const vistos = new Set(obtenerVistosObra());
+  vistos.add(id);
+  localStorage.setItem("obraVistas", JSON.stringify([...vistos]));
+}
+
+function esNuevaObra(id){
+  return !obtenerVistosObra().includes(id);
+}
+
+function cerrarLightboxObra(){
+  const modal = document.getElementById("lightboxObra");
+  if (modal) modal.remove();
+}
+
+function abrirLightboxObra(item){
+  guardarVistoObra(item.id);
+
+  const modal = document.createElement("div");
+  modal.id = "lightboxObra";
+  modal.className = "lightbox-obra";
+  modal.innerHTML = `
+    <div class="lightbox-obra-contenido">
+      <button class="lightbox-cerrar" type="button">×</button>
+      <div class="lightbox-media">
+        ${renderMediaPublica(item.url, item.tipo, item.titulo)}
+      </div>
+      <div class="lightbox-info">
+        <span class="tipo-media-badge">${item.tipo==="youtube"||item.tipo==="video"?"Video":"Imagen"}</span>
+        <h3>${item.titulo || "Actualización de obra"}</h3>
+        <p><strong>Etapa:</strong> ${item.etapa || "Avances generales"}</p>
+        <p>${item.descripcion || ""}</p>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  modal.querySelector(".lightbox-cerrar").addEventListener("click", cerrarLightboxObra);
+  modal.addEventListener("click", (e) => {
+    if (e.target.id === "lightboxObra") cerrarLightboxObra();
+  });
+
+  const badge = document.querySelector(`[data-nuevo-obra="${item.id}"]`);
+  if (badge) badge.remove();
+}
+
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") cerrarLightboxObra();
+});
+
+
 onSnapshot(query(collection(db, "obra")), snap => {
   const c = document.getElementById("galeriaObra");
   c.innerHTML = "";
-  let count = 0;
+  const porEtapa = {};
+
   snap.forEach(d => {
-    count++;
     const o = d.data();
-    c.innerHTML += `<article class="card mini-card">${o.imagenUrl ? `<img src="${o.imagenUrl}">` : ""}<h3>${o.titulo || "Actualización de obra"}</h3><p>${o.descripcion || ""}</p></article>`;
+    const etapa = o.etapa || "Avances generales";
+    if (!porEtapa[etapa]) porEtapa[etapa] = [];
+    porEtapa[etapa].push({ id: d.id, ...o });
   });
-  if (!count) c.innerHTML = "<p>Próximamente se publicarán actualizaciones de obra.</p>";
+
+  const etapas = Object.keys(porEtapa);
+  if (!etapas.length) {
+    c.innerHTML = "<p>Próximamente se publicarán actualizaciones de obra.</p>";
+    return;
+  }
+
+  etapas.forEach(etapa => {
+    const bloque = document.createElement("section");
+    bloque.className = "bloque-etapa-obra";
+    bloque.innerHTML = `
+      <div class="etapa-obra-header">
+        <span>Etapa</span>
+        <h3>${etapa}</h3>
+      </div>
+      <div class="galeria-etapa"></div>
+    `;
+
+    const galeria = bloque.querySelector(".galeria-etapa");
+
+    porEtapa[etapa].forEach(o => {
+      const url = o.mediaUrl || o.imagenUrl || "";
+      const tipo = o.tipoMedia || "imagen";
+      const nueva = esNuevaObra(o.id);
+      const article = document.createElement("article");
+      article.className = "obra-card-pro obra-card-click";
+      article.innerHTML = `
+        <div class="obra-imagen-wrap ${tipo==="youtube"||tipo==="video"?"obra-video-wrap":""}">
+          ${nueva ? `<span class="badge-nuevo-obra" data-nuevo-obra="${o.id}">Nuevo</span>` : ""}
+          ${renderMediaPublica(url, tipo, o.titulo || "Actualización de obra")}
+        </div>
+        <div class="obra-card-info">
+          <span class="tipo-media-badge">${tipo==="youtube"||tipo==="video"?"Video":"Imagen"}</span>
+          <h4>${o.titulo || "Actualización de obra"}</h4>
+          <p>${o.descripcion || ""}</p>
+          <button type="button" class="btn-ver-grande">Ver en grande</button>
+        </div>
+      `;
+
+      article.addEventListener("click", () => {
+        abrirLightboxObra({
+          id: o.id,
+          url,
+          tipo,
+          titulo: o.titulo || "Actualización de obra",
+          etapa,
+          descripcion: o.descripcion || ""
+        });
+      });
+
+      galeria.appendChild(article);
+    });
+
+    c.appendChild(bloque);
+  });
 });
 
 onSnapshot(query(collection(db, "transparencia")), snap => {
