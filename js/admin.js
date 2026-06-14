@@ -148,6 +148,21 @@ function permisos(){
   document.querySelector(".tab-btn")?.click();
 }
 
+
+function actualizarBannerAdmin(url){
+  const header=document.querySelector(".admin-header");
+  if(!header) return;
+
+  if(url){
+    header.style.backgroundImage = `url("${url}")`;
+    header.style.backgroundSize = "cover";
+    header.style.backgroundPosition = "center";
+    header.style.backgroundRepeat = "no-repeat";
+  }else{
+    header.style.backgroundImage = "";
+  }
+}
+
 function config(){
   if(!tienePermiso("institucional")) return;
 
@@ -158,19 +173,7 @@ function config(){
   const bannerInput=document.getElementById("bannerUrl");
   if(bannerInput){
     bannerInput.addEventListener("input",()=>{
-      const previewBanner=document.getElementById("previewBannerAdmin");
-      const previewVacio=document.getElementById("previewBannerVacio");
-      if(!previewBanner || !previewVacio) return;
-
-      const url=bannerInput.value.trim();
-      if(url){
-        previewBanner.src=url;
-        previewBanner.classList.remove("oculto");
-        previewVacio.classList.add("oculto");
-      }else{
-        previewBanner.classList.add("oculto");
-        previewVacio.classList.remove("oculto");
-      }
+      actualizarBannerAdmin(bannerInput.value.trim());
     });
   }
 
@@ -182,19 +185,7 @@ function config(){
     document.getElementById("subtituloEscuela").value=d.subtitulo||"";
     document.getElementById("logoUrl").value=d.logoUrl||"";
     if(document.getElementById("bannerUrl")) document.getElementById("bannerUrl").value=d.bannerUrl||"";
-
-    const previewBanner=document.getElementById("previewBannerAdmin");
-    const previewVacio=document.getElementById("previewBannerVacio");
-    if(previewBanner && previewVacio){
-      if(d.bannerUrl){
-        previewBanner.src=d.bannerUrl;
-        previewBanner.classList.remove("oculto");
-        previewVacio.classList.add("oculto");
-      }else{
-        previewBanner.classList.add("oculto");
-        previewVacio.classList.remove("oculto");
-      }
-    }
+    actualizarBannerAdmin(d.bannerUrl || "");
 
     document.getElementById("alias").value=d.alias||"";
     document.getElementById("cbu").value=d.cbu||"";

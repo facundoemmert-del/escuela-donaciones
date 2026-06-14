@@ -103,7 +103,7 @@ onSnapshot(doc(db, "configuracion", "sitio"), s => {
   if (hero) {
     if (d.bannerUrl) {
       hero.style.backgroundImage = `url("${d.bannerUrl}")`;
-      hero.style.backgroundSize = "contain";
+      hero.style.backgroundSize = "cover";
       hero.style.backgroundRepeat = "no-repeat";
       hero.style.backgroundPosition = "center";
     } else {
