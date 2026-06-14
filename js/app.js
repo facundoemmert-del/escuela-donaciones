@@ -234,6 +234,66 @@ onSnapshot(query(collection(db, "donaciones")), snap => {
 });
 
 
+
+function numeroEtapa(etapa){
+  const texto = String(etapa || "").toLowerCase();
+  const romanos = {"i":1,"ii":2,"iii":3,"iv":4,"v":5,"vi":6,"vii":7,"viii":8,"ix":9,"x":10};
+  const r = texto.match(/etapa\s+([ivx]+)/i);
+  if(r && romanos[r[1].toLowerCase()]) return romanos[r[1].toLowerCase()];
+  const n = texto.match(/etapa\s+(\d+)/i);
+  if(n) return Number(n[1]);
+  return 999;
+}
+
+function ordenarEtapas(a,b){
+  const na=numeroEtapa(a), nb=numeroEtapa(b);
+  if(na!==nb) return na-nb;
+  return String(a).localeCompare(String(b),"es");
+}
+
+function ordenarItemsObra(a,b){
+  return (a.creado?.seconds || 0) - (b.creado?.seconds || 0);
+}
+
+let galeriaObraActual = [];
+let indiceObraActual = 0;
+
+function actualizarLightboxObra(){
+  const item = galeriaObraActual[indiceObraActual];
+  if(!item) return;
+
+  guardarVistoObra(item.id);
+
+  const media = document.querySelector("#lightboxObra .lightbox-media");
+  const info = document.querySelector("#lightboxObra .lightbox-info");
+  const contador = document.querySelector("#lightboxObra .lightbox-contador");
+
+  if(media) media.innerHTML = renderMediaPublica(item.url, item.tipo, item.titulo);
+  if(info) {
+    info.innerHTML = `
+      <h3>${item.titulo || "Actualización de obra"}</h3>
+      <p>${item.descripcion || ""}</p>
+    `;
+  }
+  if(contador) contador.textContent = `${indiceObraActual + 1} / ${galeriaObraActual.length}`;
+
+  const badge = document.querySelector(`[data-nuevo-obra="${item.id}"]`);
+  if (badge) badge.remove();
+}
+
+function obraAnterior(){
+  if(!galeriaObraActual.length) return;
+  indiceObraActual = (indiceObraActual - 1 + galeriaObraActual.length) % galeriaObraActual.length;
+  actualizarLightboxObra();
+}
+
+function obraSiguiente(){
+  if(!galeriaObraActual.length) return;
+  indiceObraActual = (indiceObraActual + 1) % galeriaObraActual.length;
+  actualizarLightboxObra();
+}
+
+
 function obtenerVistosObra(){
   try {
     return JSON.parse(localStorage.getItem("obraVistas") || "[]");
@@ -257,8 +317,9 @@ function cerrarLightboxObra(){
   if (modal) modal.remove();
 }
 
-function abrirLightboxObra(item){
-  guardarVistoObra(item.id);
+function abrirLightboxObra(item, grupo=[], indice=0){
+  galeriaObraActual = grupo.length ? grupo : [item];
+  indiceObraActual = indice;
 
   const modal = document.createElement("div");
   modal.id = "lightboxObra";
@@ -266,28 +327,34 @@ function abrirLightboxObra(item){
   modal.innerHTML = `
     <div class="lightbox-obra-contenido">
       <button class="lightbox-cerrar" type="button">×</button>
-      <div class="lightbox-media">
-        ${renderMediaPublica(item.url, item.tipo, item.titulo)}
-      </div>
-      <div class="lightbox-info">
-  <h3><p> ${item.etapa || "Avances generales"}</p></h3>
-   <p>${item.titulo || "Actualización de obra"}</p>
-  <p>${item.descripcion || ""}</p>
-</div>
+      <button class="lightbox-flecha lightbox-prev" type="button">‹</button>
+      <button class="lightbox-flecha lightbox-next" type="button">›</button>
+      <div class="lightbox-media"></div>
+      <div class="lightbox-info"></div>
+      <div class="lightbox-contador"></div>
+    </div>
   `;
 
   document.body.appendChild(modal);
-  modal.querySelector(".lightbox-cerrar").addEventListener("click", cerrarLightboxObra);
-  modal.addEventListener("click", (e) => {
-    if (e.target.id === "lightboxObra") cerrarLightboxObra();
-  });
 
-  const badge = document.querySelector(`[data-nuevo-obra="${item.id}"]`);
-  if (badge) badge.remove();
+  modal.querySelector(".lightbox-cerrar").addEventListener("click", cerrarLightboxObra);
+  modal.querySelector(".lightbox-prev").addEventListener("click", (e)=>{e.stopPropagation(); obraAnterior();});
+  modal.querySelector(".lightbox-next").addEventListener("click", (e)=>{e.stopPropagation(); obraSiguiente();});
+  modal.addEventListener("click", (e)=>{ if(e.target.id==="lightboxObra") cerrarLightboxObra(); });
+
+  actualizarLightboxObra();
+
+  if(galeriaObraActual.length <= 1){
+    modal.querySelector(".lightbox-prev").style.display="none";
+    modal.querySelector(".lightbox-next").style.display="none";
+    modal.querySelector(".lightbox-contador").style.display="none";
+  }
 }
 
 document.addEventListener("keydown", e => {
   if (e.key === "Escape") cerrarLightboxObra();
+  if (document.getElementById("lightboxObra") && e.key === "ArrowLeft") obraAnterior();
+  if (document.getElementById("lightboxObra") && e.key === "ArrowRight") obraSiguiente();
 });
 
 
@@ -303,54 +370,49 @@ onSnapshot(query(collection(db, "obra")), snap => {
     porEtapa[etapa].push({ id: d.id, ...o });
   });
 
-  const etapas = Object.keys(porEtapa);
+  const etapas = Object.keys(porEtapa).sort(ordenarEtapas);
   if (!etapas.length) {
     c.innerHTML = "<p>Próximamente se publicarán actualizaciones de obra.</p>";
     return;
   }
 
   etapas.forEach(etapa => {
+    porEtapa[etapa].sort(ordenarItemsObra);
+
     const bloque = document.createElement("section");
     bloque.className = "bloque-etapa-obra";
     bloque.innerHTML = `
       <div class="etapa-obra-header">
-        <span>Etapa</span>
-        <h3>${etapa}</h3>
+        <span>${etapa}</span>
       </div>
       <div class="galeria-etapa"></div>
     `;
 
     const galeria = bloque.querySelector(".galeria-etapa");
 
-    porEtapa[etapa].forEach(o => {
+    const grupo = porEtapa[etapa].map(o => {
       const url = o.mediaUrl || o.imagenUrl || "";
       const tipo = o.tipoMedia || "imagen";
-      const nueva = esNuevaObra(o.id);
+      return { id:o.id, url, tipo, titulo:o.titulo || "Actualización de obra", etapa, descripcion:o.descripcion || "" };
+    });
+
+    grupo.forEach((item, indice) => {
+      const nueva = esNuevaObra(item.id);
       const article = document.createElement("article");
       article.className = "obra-card-pro obra-card-click";
       article.innerHTML = `
-        <div class="obra-imagen-wrap ${tipo==="youtube"||tipo==="video"?"obra-video-wrap":""}">
-          ${nueva ? `<span class="badge-nuevo-obra" data-nuevo-obra="${o.id}">Nuevo</span>` : ""}
-          ${renderMediaPublica(url, tipo, o.titulo || "Actualización de obra")}
+        <div class="obra-imagen-wrap ${item.tipo==="youtube"||item.tipo==="video"?"obra-video-wrap":""}">
+          ${nueva ? `<span class="badge-nuevo-obra" data-nuevo-obra="${item.id}">Nuevo</span>` : ""}
+          ${renderMediaPublica(item.url, item.tipo, item.titulo)}
         </div>
         <div class="obra-card-info">
-          <h4>${o.titulo || "Actualización de obra"}</h4>
-          <p>${o.descripcion || ""}</p>
+          <h4>${item.titulo}</h4>
+          <p>${item.descripcion}</p>
           <button type="button" class="btn-ver-grande">Ver en grande</button>
         </div>
       `;
 
-      article.addEventListener("click", () => {
-        abrirLightboxObra({
-          id: o.id,
-          url,
-          tipo,
-          titulo: o.titulo || "Actualización de obra",
-          etapa,
-          descripcion: o.descripcion || ""
-        });
-      });
-
+      article.addEventListener("click", () => abrirLightboxObra(item, grupo, indice));
       galeria.appendChild(article);
     });
 
