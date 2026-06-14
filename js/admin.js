@@ -155,6 +155,25 @@ function config(){
   const f=document.getElementById("configForm");
   if(!f) return;
 
+  const bannerInput=document.getElementById("bannerUrl");
+  if(bannerInput){
+    bannerInput.addEventListener("input",()=>{
+      const previewBanner=document.getElementById("previewBannerAdmin");
+      const previewVacio=document.getElementById("previewBannerVacio");
+      if(!previewBanner || !previewVacio) return;
+
+      const url=bannerInput.value.trim();
+      if(url){
+        previewBanner.src=url;
+        previewBanner.classList.remove("oculto");
+        previewVacio.classList.add("oculto");
+      }else{
+        previewBanner.classList.add("oculto");
+        previewVacio.classList.remove("oculto");
+      }
+    });
+  }
+
   onSnapshot(ref,s=>{
     if(!s.exists()) return;
     const d=s.data();
@@ -163,6 +182,20 @@ function config(){
     document.getElementById("subtituloEscuela").value=d.subtitulo||"";
     document.getElementById("logoUrl").value=d.logoUrl||"";
     if(document.getElementById("bannerUrl")) document.getElementById("bannerUrl").value=d.bannerUrl||"";
+
+    const previewBanner=document.getElementById("previewBannerAdmin");
+    const previewVacio=document.getElementById("previewBannerVacio");
+    if(previewBanner && previewVacio){
+      if(d.bannerUrl){
+        previewBanner.src=d.bannerUrl;
+        previewBanner.classList.remove("oculto");
+        previewVacio.classList.add("oculto");
+      }else{
+        previewBanner.classList.add("oculto");
+        previewVacio.classList.remove("oculto");
+      }
+    }
+
     document.getElementById("alias").value=d.alias||"";
     document.getElementById("cbu").value=d.cbu||"";
     document.getElementById("titularCuenta").value=d.titularCuenta||"";

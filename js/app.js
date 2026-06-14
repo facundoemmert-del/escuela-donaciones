@@ -102,9 +102,9 @@ onSnapshot(doc(db, "configuracion", "sitio"), s => {
   const hero = document.querySelector(".hero");
   if (hero) {
     if (d.bannerUrl) {
-      hero.style.backgroundImage =
-        `linear-gradient(135deg, rgba(7, 55, 32, .82), rgba(15, 73, 115, .82)), url("${d.bannerUrl}")`;
-      hero.style.backgroundSize = "cover";
+      hero.style.backgroundImage = `url("${d.bannerUrl}")`;
+      hero.style.backgroundSize = "contain";
+      hero.style.backgroundRepeat = "no-repeat";
       hero.style.backgroundPosition = "center";
     } else {
       hero.style.backgroundImage = "";
