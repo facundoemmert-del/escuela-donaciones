@@ -1542,3 +1542,32 @@ main,
     grid-template-columns: 1fr !important;
   }
 }
+
+.btn-mas-etapa{
+  position:relative;
+  overflow:hidden;
+  min-height:145px;
+  border:none;
+  border-radius:18px;
+  cursor:pointer;
+}
+
+.overlay-mas-etapa{
+  position:absolute;
+  inset:0;
+  background:rgba(0,0,0,.45);
+  color:white;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+}
+
+.mas-numero{
+  font-size:34px;
+  font-weight:900;
+}
+
+.mas-texto{
+  font-size:14px;
+}
