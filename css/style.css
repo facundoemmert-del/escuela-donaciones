@@ -1052,3 +1052,21 @@ button:active {
     grid-template-columns: 1fr !important;
   }
 }
+
+
+/* ZIP 39 - Admin obra igual a la parte pública */
+#listaObra{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))!important;gap:26px!important;align-items:start!important;max-width:1180px!important;margin:26px auto 0!important}
+.admin-etapa-obra{margin:0!important;background:rgba(255,255,255,.78);border:1px solid #dce5ed;border-radius:24px;padding:18px;box-shadow:0 16px 40px rgba(18,38,63,.09)}
+.admin-galeria-etapa{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))!important;gap:14px!important}
+.admin-obra-mini-card{border-radius:18px!important;overflow:hidden!important;background:#fff!important;box-shadow:0 10px 24px rgba(18,38,63,.10)!important;padding:0!important}
+.admin-obra-mini-card .obra-imagen-wrap{height:145px!important;max-height:145px!important;overflow:hidden!important;background:#101820!important}
+.admin-obra-mini-card .obra-imagen-wrap img,.admin-obra-mini-card .obra-imagen-wrap video,.admin-obra-mini-card .obra-imagen-wrap iframe,.admin-obra-mini-card .media-admin-preview{width:100%!important;height:145px!important;max-height:145px!important;object-fit:cover!important;border-radius:0!important;margin:0!important;display:block!important}
+.admin-obra-mini-card .media-admin-preview iframe{width:100%!important;height:100%!important}
+.admin-obra-mini-card .obra-card-info{padding:12px!important}
+.admin-obra-mini-card .obra-card-info h4{font-size:14px!important;margin:0 0 6px 0!important;line-height:1.25!important;color:#13283a!important;font-weight:900!important}
+.admin-obra-mini-card .obra-card-info p{font-size:12px!important;line-height:1.35!important;margin:0!important;color:#374b5c!important}
+.admin-obra-mini-card .admin-actions{display:flex!important;gap:8px!important;margin-top:10px!important}
+.admin-obra-mini-card .admin-actions button{font-size:11px!important;padding:7px 11px!important;border-radius:999px!important}
+@media(max-width:780px){#listaObra{grid-template-columns:1fr!important}.admin-galeria-etapa{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:480px){.admin-galeria-etapa{grid-template-columns:1fr!important}}
+
