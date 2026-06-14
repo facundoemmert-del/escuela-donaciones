@@ -336,7 +336,6 @@ onSnapshot(query(collection(db, "obra")), snap => {
           ${renderMediaPublica(url, tipo, o.titulo || "Actualización de obra")}
         </div>
         <div class="obra-card-info">
-          <span class="tipo-media-badge">${tipo==="youtube"||tipo==="video"?"Video":"Imagen"}</span>
           <h4>${o.titulo || "Actualización de obra"}</h4>
           <p>${o.descripcion || ""}</p>
           <button type="button" class="btn-ver-grande">Ver en grande</button>

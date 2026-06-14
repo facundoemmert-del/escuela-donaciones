@@ -162,6 +162,7 @@ function config(){
     document.getElementById("nombreEscuela").value=d.nombreEscuela||"";
     document.getElementById("subtituloEscuela").value=d.subtitulo||"";
     document.getElementById("logoUrl").value=d.logoUrl||"";
+    if(document.getElementById("bannerUrl")) document.getElementById("bannerUrl").value=d.bannerUrl||"";
     document.getElementById("alias").value=d.alias||"";
     document.getElementById("cbu").value=d.cbu||"";
     document.getElementById("titularCuenta").value=d.titularCuenta||"";
@@ -182,6 +183,7 @@ function config(){
       nombreEscuela:document.getElementById("nombreEscuela").value.trim(),
       subtitulo:document.getElementById("subtituloEscuela").value.trim(),
       logoUrl:document.getElementById("logoUrl").value.trim(),
+      bannerUrl:document.getElementById("bannerUrl")?.value.trim() || "",
       alias:document.getElementById("alias").value.trim(),
       cbu:document.getElementById("cbu").value.trim(),
       titularCuenta:document.getElementById("titularCuenta").value.trim(),
@@ -225,6 +227,36 @@ function objetivos(){
   });
 
   bus.oninput=renderObjetivos;
+}
+
+
+function obtenerYoutubeId(url){
+  if(!url) return "";
+  const patrones=[
+    /youtu\.be\/([^?&]+)/,
+    /youtube\.com\/watch\?v=([^?&]+)/,
+    /youtube\.com\/embed\/([^?&]+)/,
+    /youtube\.com\/shorts\/([^?&]+)/
+  ];
+  for(const p of patrones){
+    const m=url.match(p);
+    if(m&&m[1]) return m[1];
+  }
+  return "";
+}
+
+function renderMediaAdmin(url,tipo,titulo=""){
+  if(!url) return "";
+  const tipoReal=tipo||"imagen";
+  if(tipoReal==="youtube"){
+    const id=obtenerYoutubeId(url);
+    if(!id) return `<p><a href="${url}" target="_blank">Ver video</a></p>`;
+    return `<div class="media-admin-preview"><iframe src="https://www.youtube.com/embed/${id}" title="${titulo}" allowfullscreen></iframe></div>`;
+  }
+  if(tipoReal==="video"){
+    return `<video class="imagen-admin" src="${url}" controls></video>`;
+  }
+  return `<img class="imagen-admin" src="${url}" alt="${titulo}">`;
 }
 
 function limpiarTexto(valor){
@@ -451,17 +483,22 @@ function obra(){
     e.preventDefault();
 
     const titulo=document.getElementById("obraTitulo").value.trim();
-    const imagenUrl=document.getElementById("obraImagenUrl").value.trim();
+    const etapa=document.getElementById("obraEtapa").value.trim();
+    const tipoMedia=document.getElementById("obraTipoMedia")?.value || "imagen";
+    const mediaUrl=document.getElementById("obraImagenUrl").value.trim();
     const descripcion=document.getElementById("obraDescripcion").value.trim();
 
-    if(!titulo || !imagenUrl || !descripcion){
-      alert("Para crear una actualización de obra completá título, URL de foto y descripción.");
+    if(!titulo || !etapa || !mediaUrl || !descripcion){
+      alert("Para crear una actualización de obra completá título, etapa, URL de imagen/video y descripción.");
       return;
     }
 
     await addDoc(collection(db,"obra"),{
       titulo,
-      imagenUrl,
+      etapa,
+      tipoMedia,
+      mediaUrl,
+      imagenUrl: mediaUrl,
       descripcion,
       creado:serverTimestamp()
     });
@@ -475,12 +512,16 @@ function obra(){
     s.forEach(d=>{
       const x=d.data();
       const id=d.id;
+      const url=x.mediaUrl || x.imagenUrl || "";
+      const tipo=x.tipoMedia || "imagen";
 
       const div=document.createElement("div");
       div.className="card";
       div.innerHTML=`
-        ${x.imagenUrl?`<img class="imagen-admin" src="${x.imagenUrl}">`:""}
+        ${renderMediaAdmin(url,tipo,x.titulo||"Obra")}
         <h3>${x.titulo||"Obra"}</h3>
+        <p><strong>Etapa:</strong> ${x.etapa||"Sin etapa"}</p>
+        <p><strong>Tipo:</strong> ${tipo==="youtube"?"Video de YouTube":tipo==="video"?"Video MP4":"Imagen"}</p>
         <p>${x.descripcion||""}</p>
 
         <button onclick="abrirEditorObra('${id}')">Editar</button>
@@ -501,14 +542,26 @@ window.abrirEditorObra=async id=>{
   if(!snap.exists()) return alert("No se encontró la actualización de obra.");
 
   const x=snap.data();
+  const tipo=x.tipoMedia || "imagen";
+  const url=x.mediaUrl || x.imagenUrl || "";
 
   crearModalAdmin("Editar actualización de obra", `
     <div class="form-modal-admin">
       <label>Título</label>
       <input id="edit-obra-titulo-${id}" value="${limpiarTexto(x.titulo||"")}" placeholder="Título">
 
-      <label>URL de foto</label>
-      <input id="edit-obra-imagen-${id}" value="${limpiarTexto(x.imagenUrl||"")}" placeholder="URL de foto">
+      <label>Etapa</label>
+      <input id="edit-obra-etapa-${id}" value="${limpiarTexto(x.etapa||"")}" placeholder="Nombre del grupo o etapa">
+
+      <label>Tipo de contenido</label>
+      <select id="edit-obra-tipo-${id}">
+        <option value="imagen" ${tipo==="imagen"?"selected":""}>Imagen</option>
+        <option value="youtube" ${tipo==="youtube"?"selected":""}>Video de YouTube</option>
+        <option value="video" ${tipo==="video"?"selected":""}>Video directo MP4</option>
+      </select>
+
+      <label>URL de imagen o video</label>
+      <input id="edit-obra-imagen-${id}" value="${limpiarTexto(url)}" placeholder="URL de imagen o video">
 
       <label>Descripción</label>
       <textarea id="edit-obra-descripcion-${id}" placeholder="Descripción">${x.descripcion||""}</textarea>
@@ -522,9 +575,15 @@ window.abrirEditorObra=async id=>{
 };
 
 window.guardarObra=async id=>{
+  const tipoMedia=document.getElementById("edit-obra-tipo-"+id).value;
+  const mediaUrl=document.getElementById("edit-obra-imagen-"+id).value.trim();
+
   await updateDoc(doc(db,"obra",id),{
     titulo:document.getElementById("edit-obra-titulo-"+id).value.trim(),
-    imagenUrl:document.getElementById("edit-obra-imagen-"+id).value.trim(),
+    etapa:document.getElementById("edit-obra-etapa-"+id).value.trim(),
+    tipoMedia,
+    mediaUrl,
+    imagenUrl:mediaUrl,
     descripcion:document.getElementById("edit-obra-descripcion-"+id).value.trim(),
     actualizado:serverTimestamp()
   });
