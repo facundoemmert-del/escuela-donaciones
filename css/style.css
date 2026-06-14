@@ -840,7 +840,7 @@ button:active {
 
 
 /* ZIP 37 - Banner completo sin verde + banner real en admin */
-/* Pegar al FINAL de css/style.css */
+
 
 /* Página pública: la imagen cubre todo el banner */
 .hero {
@@ -908,4 +908,19 @@ button:active {
   .hero {
     min-height: 220px !important;
   }
+}
+
+/* Banner público más alto */
+.hero{
+    height: 320px !important;
+    background-size: cover !important;
+    background-position: center center !important;
+}
+
+/* Texto abajo a la izquierda */
+.hero-contenido{
+    display:flex;
+    align-items:flex-end;
+    height:100%;
+    padding:40px;
 }
