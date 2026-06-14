@@ -106,8 +106,8 @@ footer{background:#0f4f2f;color:white;text-align:center;padding:22px;margin-top:
 }
 
 
-/* ZIP 28 - Estética PRO para Panel Administrador */
-/* Pegar al FINAL de css/style.css */
+/* ZIP 28 - Estética para Panel Administrador */
+
 
 /* Fondo general más profesional */
 body {
@@ -409,5 +409,158 @@ button:active {
 
   .form-admin {
     padding: 18px;
+  }
+}
+
+/* ZIP 32 - Galería de obra con imagen grande y etiqueta Nuevo */
+
+
+.obra-card-click {
+  cursor: pointer;
+  position: relative;
+}
+
+.obra-card-click:hover .btn-ver-grande {
+  background: linear-gradient(135deg, #0f4f2f, #159447);
+}
+
+.obra-imagen-wrap {
+  position: relative;
+}
+
+.badge-nuevo-obra {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 4;
+  background: linear-gradient(135deg, #ff3d00, #ff9800);
+  color: white;
+  font-weight: 900;
+  font-size: 12px;
+  padding: 7px 11px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  box-shadow: 0 8px 18px rgba(255, 90, 0, .30);
+}
+
+.btn-ver-grande {
+  margin-top: 12px;
+  border-radius: 999px;
+  padding: 9px 14px;
+  font-size: 13px;
+}
+
+.lightbox-obra {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 12, 18, .86);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  backdrop-filter: blur(6px);
+  animation: lightboxFade .18s ease both;
+}
+
+.lightbox-obra-contenido {
+  position: relative;
+  width: min(1100px, 96vw);
+  max-height: 92vh;
+  background: white;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 30px 90px rgba(0,0,0,.45);
+  display: grid;
+  grid-template-columns: 1.6fr .8fr;
+  animation: lightboxZoom .22s ease both;
+}
+
+.lightbox-media {
+  min-height: 420px;
+  background: #0b1117;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lightbox-media img,
+.lightbox-media video,
+.lightbox-media iframe {
+  width: 100%;
+  height: 100%;
+  max-height: 82vh;
+  object-fit: contain;
+  border: 0;
+  display: block;
+}
+
+.lightbox-media iframe {
+  min-height: 520px;
+}
+
+.lightbox-info {
+  padding: 28px;
+  overflow-y: auto;
+}
+
+.lightbox-info h3 {
+  font-size: 26px;
+  color: #13283a;
+  margin: 12px 0;
+}
+
+.lightbox-info p {
+  color: #374b5c;
+  line-height: 1.5;
+  margin: 8px 0;
+}
+
+.lightbox-cerrar {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 5;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  background: #9b1c1c;
+  color: white;
+  font-size: 26px;
+  line-height: 1;
+  padding: 0;
+}
+
+@keyframes lightboxFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes lightboxZoom {
+  from { opacity: 0; transform: scale(.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@media(max-width: 850px) {
+  .lightbox-obra {
+    padding: 12px;
+  }
+
+  .lightbox-obra-contenido {
+    grid-template-columns: 1fr;
+    max-height: 94vh;
+  }
+
+  .lightbox-media {
+    min-height: 300px;
+  }
+
+  .lightbox-media iframe {
+    min-height: 300px;
+  }
+
+  .lightbox-info {
+    padding: 20px;
   }
 }
