@@ -1475,3 +1475,73 @@ main,
     max-height: 180px !important;
   }
 }
+
+
+/* ZIP 41 - Mostrar solo 4 imágenes por etapa + botón más */
+
+.oculto-etapa-obra {
+  display: none !important;
+}
+
+/* Cada etapa muestra hasta 4 elementos en grilla 2x2 */
+.bloque-etapa-obra .galeria-etapa {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+/* Botón + para desplegar más imágenes */
+.btn-mas-etapa {
+  min-height: 145px;
+  border: 2px dashed #1f5a8a;
+  background: linear-gradient(180deg, #f7fbff, #eef6fb);
+  color: #1f5a8a;
+  border-radius: 18px;
+  font-weight: 900;
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 24px rgba(18,38,63,.08);
+  cursor: pointer;
+}
+
+.btn-mas-etapa:hover {
+  background: linear-gradient(135deg, #1f5a8a, #2472a8);
+  color: #fff;
+  border-color: transparent;
+}
+
+.mas-icono {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgba(31,90,138,.12);
+  font-size: 30px;
+  line-height: 1;
+}
+
+.btn-mas-etapa:hover .mas-icono {
+  background: rgba(255,255,255,.22);
+}
+
+@media(max-width: 600px) {
+  .bloque-etapa-obra .galeria-etapa {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .btn-mas-etapa {
+    min-height: 130px;
+    font-size: 12px;
+  }
+}
+
+@media(max-width: 380px) {
+  .bloque-etapa-obra .galeria-etapa {
+    grid-template-columns: 1fr !important;
+  }
+}
