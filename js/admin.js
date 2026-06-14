@@ -149,6 +149,20 @@ function permisos(){
 }
 
 
+
+function numeroEtapaAdmin(etapa){
+  const t=String(etapa||"").toLowerCase();
+  const r={"i":1,"ii":2,"iii":3,"iv":4,"v":5,"vi":6,"vii":7,"viii":8,"ix":9,"x":10};
+  const m=t.match(/etapa\s+([ivx]+)/i); if(m&&r[m[1].toLowerCase()]) return r[m[1].toLowerCase()];
+  const n=t.match(/etapa\s+(\d+)/i); if(n) return Number(n[1]);
+  return 999;
+}
+function ordenarEtapasAdmin(a,b){
+  const na=numeroEtapaAdmin(a), nb=numeroEtapaAdmin(b);
+  return na!==nb ? na-nb : String(a).localeCompare(String(b),"es");
+}
+function ordenarObrasAdmin(a,b){ return (a.creado?.seconds||0)-(b.creado?.seconds||0); }
+
 function actualizarBannerAdmin(url){
   const header=document.querySelector(".admin-header");
   if(!header) return;
@@ -498,14 +512,12 @@ window.rechazarDonacion=async id=>{
 
 function obra(){
   if(!tienePermiso("obra")) return;
-
   const f=document.getElementById("obraForm");
   const l=document.getElementById("listaObra");
   if(!f) return;
 
   f.onsubmit=async e=>{
     e.preventDefault();
-
     const titulo=document.getElementById("obraTitulo").value.trim();
     const etapa=document.getElementById("obraEtapa").value.trim();
     const tipoMedia=document.getElementById("obraTipoMedia")?.value || "imagen";
@@ -517,47 +529,61 @@ function obra(){
       return;
     }
 
-    await addDoc(collection(db,"obra"),{
-      titulo,
-      etapa,
-      tipoMedia,
-      mediaUrl,
-      imagenUrl: mediaUrl,
-      descripcion,
-      creado:serverTimestamp()
-    });
-
+    await addDoc(collection(db,"obra"),{titulo,etapa,tipoMedia,mediaUrl,imagenUrl:mediaUrl,descripcion,creado:serverTimestamp()});
     f.reset();
   };
 
-  onSnapshot(query(collection(db,"obra")),s=>{
+  onSnapshot(query(collection(db,"obra")),snap=>{
     l.innerHTML="";
+    const porEtapa={};
 
-    s.forEach(d=>{
+    snap.forEach(d=>{
       const x=d.data();
-      const id=d.id;
-      const url=x.mediaUrl || x.imagenUrl || "";
-      const tipo=x.tipoMedia || "imagen";
-
-      const div=document.createElement("div");
-      div.className="card";
-      div.innerHTML=`
-        ${renderMediaAdmin(url,tipo,x.titulo||"Obra")}
-        <h3>${x.titulo||"Obra"}</h3>
-        <p><strong>Etapa:</strong> ${x.etapa||"Sin etapa"}</p>
-        <p><strong>Tipo:</strong> ${tipo==="youtube"?"Video de YouTube":tipo==="video"?"Video MP4":"Imagen"}</p>
-        <p>${x.descripcion||""}</p>
-
-        <button onclick="abrirEditorObra('${id}')">Editar</button>
-        <button class="btn-danger" onclick="eliminarObra('${id}')">Eliminar</button>
-      `;
-
-      l.appendChild(div);
+      const etapa=x.etapa||"Avances generales";
+      if(!porEtapa[etapa]) porEtapa[etapa]=[];
+      porEtapa[etapa].push({id:d.id,...x});
     });
 
-    if(!l.innerHTML){
+    const etapas=Object.keys(porEtapa).sort(ordenarEtapasAdmin);
+    if(!etapas.length){
       l.innerHTML="<p>No hay actualizaciones de obra cargadas.</p>";
+      return;
     }
+
+    etapas.forEach(etapa=>{
+      porEtapa[etapa].sort(ordenarObrasAdmin);
+
+      const bloque=document.createElement("section");
+      bloque.className="bloque-etapa-obra admin-etapa-obra";
+      bloque.innerHTML=`
+        <div class="etapa-obra-header"><span>${etapa}</span></div>
+        <div class="galeria-etapa admin-galeria-etapa"></div>
+      `;
+
+      const galeria=bloque.querySelector(".admin-galeria-etapa");
+
+      porEtapa[etapa].forEach(x=>{
+        const url=x.mediaUrl || x.imagenUrl || "";
+        const tipo=x.tipoMedia || "imagen";
+
+        const div=document.createElement("article");
+        div.className="obra-card-pro admin-obra-mini-card";
+        div.innerHTML=`
+          <div class="obra-imagen-wrap">${renderMediaAdmin(url,tipo,x.titulo||"Obra")}</div>
+          <div class="obra-card-info">
+            <h4>${x.titulo||"Obra"}</h4>
+            <p>${x.descripcion||""}</p>
+            <div class="admin-actions">
+              <button onclick="abrirEditorObra('${x.id}')">Editar</button>
+              <button class="btn-danger" onclick="eliminarObra('${x.id}')">Eliminar</button>
+            </div>
+          </div>
+        `;
+        galeria.appendChild(div);
+      });
+
+      l.appendChild(bloque);
+    });
   });
 }
 
@@ -575,7 +601,7 @@ window.abrirEditorObra=async id=>{
       <input id="edit-obra-titulo-${id}" value="${limpiarTexto(x.titulo||"")}" placeholder="Título">
 
       <label>Etapa</label>
-      <input id="edit-obra-etapa-${id}" value="${limpiarTexto(x.etapa||"")}" placeholder="Nombre del grupo o etapa">
+      <input id="edit-obra-etapa-${id}" value="${limpiarTexto(x.etapa||"")}" placeholder="Etapa de obra">
 
       <label>Tipo de contenido</label>
       <select id="edit-obra-tipo-${id}">
