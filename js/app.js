@@ -270,12 +270,9 @@ function abrirLightboxObra(item){
         ${renderMediaPublica(item.url, item.tipo, item.titulo)}
       </div>
       <div class="lightbox-info">
-        <span class="tipo-media-badge">${item.tipo==="youtube"||item.tipo==="video"?"Video":"Imagen"}</span>
-        <h3>${item.titulo || "Actualización de obra"}</h3>
-        <p><strong>Etapa:</strong> ${item.etapa || "Avances generales"}</p>
-        <p>${item.descripcion || ""}</p>
-      </div>
-    </div>
+  <h3>${item.titulo || "Actualización de obra"}</h3>
+  <p>${item.descripcion || ""}</p>
+</div>
   `;
 
   document.body.appendChild(modal);
