@@ -270,8 +270,8 @@ function abrirLightboxObra(item){
         ${renderMediaPublica(item.url, item.tipo, item.titulo)}
       </div>
       <div class="lightbox-info">
-  <h3>${item.titulo || "Actualización de obra"}</h3>
-   <p> ${item.etapa || "Avances generales"}</p>
+  <h3><p> ${item.etapa || "Avances generales"}</p></h3>
+   <p>${item.titulo || "Actualización de obra"}</p>
   <p>${item.descripcion || ""}</p>
 </div>
   `;
