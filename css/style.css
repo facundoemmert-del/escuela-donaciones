@@ -791,3 +791,38 @@ button:active {
     padding: 20px;
   }
 }
+
+/* ZIP 34 - Obra: grupo/etapa editable + tarjetas sin texto 'Imagen' */
+
+
+/* Oculta la palabra Imagen/Video dentro de las tarjetas públicas de obra */
+.obra-card-info > .tipo-media-badge {
+  display: none !important;
+}
+
+/* Mantiene visible la etiqueta Imagen/Video solo dentro de la ventana grande */
+.lightbox-info > .tipo-media-badge {
+  display: inline-block !important;
+}
+
+/* Título de etapa/grupo más prolijo */
+.etapa-obra-header h3 {
+  font-size: 25px;
+  color: #13283a;
+  font-weight: 900;
+}
+
+/* Tarjeta de obra: solo imagen, título, descripción y botón */
+.obra-card-info {
+  padding-top: 14px !important;
+}
+
+.obra-card-info h4 {
+  margin-top: 0 !important;
+  font-weight: 900;
+}
+
+/* Mejora texto del botón */
+.btn-ver-grande {
+  margin-top: 12px !important;
+}
