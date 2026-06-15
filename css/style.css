@@ -2004,3 +2004,33 @@ body:has(#loginForm) > b {
   }
 }
 
+
+/* ZIP 46 - Evitar parpadeo del banner público al recargar */
+
+
+/* Mientras Firebase carga la configuración, no muestra el banner viejo/verde */
+body:not(.publica-lista) .hero {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* Cuando ya cargó la configuración, aparece suave */
+body.publica-lista .hero {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transition: opacity .25s ease !important;
+}
+
+/* Asegura que el banner use la imagen limpia, sin filtro verde */
+.hero {
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+}
+
+.hero::before,
+.hero::after {
+  display: none !important;
+  content: none !important;
+  background: none !important;
+}
