@@ -1774,3 +1774,233 @@ body.fondo-publico-activo .bloque-etapa-obra {
 }
 
 
+
+/* ZIP 45 - Login profesional centrado */
+
+
+/* Pantalla completa del login */
+body.login-body,
+body:has(#loginForm) {
+  min-height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  overflow: hidden !important;
+  background-image:
+    linear-gradient(90deg, rgba(5,20,15,.62), rgba(6,24,35,.42)),
+    var(--fondo-login-url) !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+  font-family: Arial, sans-serif !important;
+}
+
+/* Sacamos el azul fuerte anterior */
+body.fondo-login-activo,
+body.login-body.fondo-login-activo,
+body:has(#loginForm).fondo-login-activo {
+  background-image:
+    linear-gradient(90deg, rgba(5,20,15,.62), rgba(6,24,35,.42)),
+    var(--fondo-login-url) !important;
+}
+
+/* Tarjeta completa del login */
+.login-card {
+  width: min(430px, calc(100vw - 32px)) !important;
+  min-height: auto !important;
+  background: rgba(255,255,255,.94) !important;
+  border: 1px solid rgba(255,255,255,.65) !important;
+  border-radius: 28px !important;
+  padding: 34px 30px 28px !important;
+  box-shadow: 0 30px 90px rgba(0,0,0,.34) !important;
+  backdrop-filter: blur(10px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: center !important;
+  text-align: center !important;
+  position: relative !important;
+}
+
+/* Logo visual superior */
+.login-card::before {
+  content: "";
+  width: 76px;
+  height: 76px;
+  margin: 0 auto 14px;
+  display: block;
+  border-radius: 20px;
+  background:
+    rgba(255,255,255,.95)
+    url("https://facundoemmert-del.github.io/escuela-donaciones/assets/logo.png")
+    center / contain no-repeat;
+  box-shadow: 0 12px 30px rgba(18,38,63,.18);
+}
+
+/* Título */
+.login-card h1,
+body:has(#loginForm) h1 {
+  position: static !important;
+  transform: none !important;
+  width: auto !important;
+  color: #13283a !important;
+  font-size: 30px !important;
+  font-weight: 900 !important;
+  line-height: 1.1 !important;
+  text-align: center !important;
+  margin: 0 0 4px !important;
+  text-shadow: none !important;
+}
+
+/* Subtítulo */
+.login-card > p:first-of-type,
+body:has(#loginForm) h1 + p,
+body:has(#loginForm) > p:first-of-type {
+  position: static !important;
+  transform: none !important;
+  width: auto !important;
+  color: #466176 !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  margin: 0 0 20px !important;
+  text-align: center !important;
+  text-shadow: none !important;
+}
+
+/* Formulario */
+#loginForm {
+  width: 100% !important;
+  background: transparent !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border: 0 !important;
+  display: grid !important;
+  gap: 12px !important;
+  margin: 0 !important;
+}
+
+/* Inputs */
+#loginForm input {
+  height: 48px !important;
+  border-radius: 16px !important;
+  border: 1px solid #cfdbe6 !important;
+  padding: 0 15px !important;
+  font-size: 14px !important;
+  background: #fff !important;
+}
+
+#loginForm input:focus {
+  outline: none !important;
+  border-color: #1f5a8a !important;
+  box-shadow: 0 0 0 4px rgba(31,90,138,.13) !important;
+}
+
+/* Botón ingresar */
+#loginForm button {
+  width: 100% !important;
+  height: 48px !important;
+  border-radius: 999px !important;
+  margin: 2px 0 8px !important;
+  background: linear-gradient(135deg, #1f5a8a, #2472a8) !important;
+  box-shadow: 0 12px 26px rgba(31,90,138,.24) !important;
+  font-weight: 900 !important;
+}
+
+/* Botones secundarios */
+#crearCuentaBtn,
+#recuperarBtn {
+  width: 100% !important;
+  height: 42px !important;
+  border-radius: 999px !important;
+  margin: 5px 0 0 !important;
+  padding: 0 14px !important;
+  box-shadow: none !important;
+}
+
+#crearCuentaBtn {
+  background: #0f4f2f !important;
+}
+
+#recuperarBtn {
+  background: transparent !important;
+  color: #1f5a8a !important;
+  border: 1px solid #cfe0ed !important;
+}
+
+/* Mensaje */
+#loginMensaje {
+  min-height: 20px !important;
+  color: #9b1c1c !important;
+  font-weight: 800 !important;
+  text-align: center !important;
+  margin: 12px 0 0 !important;
+}
+
+/* Ayuda inferior */
+.login-ayuda {
+  margin-top: 18px !important;
+  padding: 14px !important;
+  border-radius: 18px !important;
+  background: #f4f8fb !important;
+  color: #334b5f !important;
+  text-align: left !important;
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+  text-shadow: none !important;
+}
+
+.login-ayuda p {
+  margin: 3px 0 !important;
+}
+
+.login-ayuda strong {
+  color: #13283a !important;
+}
+
+/* Por si el texto de ayuda quedó fuera de la tarjeta */
+body.login-body > p,
+body.login-body > strong,
+body.login-body > b,
+body:has(#loginForm) > p:not(:first-of-type),
+body:has(#loginForm) > strong,
+body:has(#loginForm) > b {
+  position: static !important;
+  transform: none !important;
+  width: auto !important;
+  color: inherit !important;
+  text-shadow: none !important;
+}
+
+/* Celular */
+@media(max-width: 600px) {
+  body.login-body,
+  body:has(#loginForm) {
+    padding: 16px !important;
+    overflow-y: auto !important;
+  }
+
+  .login-card {
+    width: 100% !important;
+    padding: 26px 18px 22px !important;
+    border-radius: 24px !important;
+  }
+
+  .login-card::before {
+    width: 66px;
+    height: 66px;
+    margin-bottom: 12px;
+  }
+
+  .login-card h1,
+  body:has(#loginForm) h1 {
+    font-size: 25px !important;
+  }
+
+  .login-card > p:first-of-type {
+    font-size: 12px !important;
+  }
+}
+
