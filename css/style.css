@@ -1571,3 +1571,14 @@ main,
 .mas-texto{
   font-size:14px;
 }
+
+/* ZIP 42 - Admin obra: mostrar solo 4 por etapa igual que pública */
+.oculto-etapa-obra-admin{display:none!important}
+.admin-etapa-obra .admin-galeria-etapa{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:14px!important}
+.btn-mas-etapa-admin{min-height:145px;border:none;border-radius:18px;overflow:hidden;position:relative;cursor:pointer;background:linear-gradient(180deg,#f7fbff,#eef6fb);box-shadow:0 10px 24px rgba(18,38,63,.08)}
+.overlay-mas-etapa-admin{position:absolute;inset:0;background:rgba(0,0,0,.48);color:white;display:flex;flex-direction:column;gap:4px;align-items:center;justify-content:center}
+.mas-numero-admin{font-size:34px;font-weight:900;line-height:1}
+.mas-texto-admin{font-size:14px;font-weight:900}
+.btn-mas-etapa-admin:hover .overlay-mas-etapa-admin{background:rgba(31,90,138,.72)}
+@media(max-width:780px){.admin-etapa-obra .admin-galeria-etapa{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:380px){.admin-etapa-obra .admin-galeria-etapa{grid-template-columns:1fr!important}}
