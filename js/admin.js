@@ -177,12 +177,46 @@ function actualizarBannerAdmin(url){
   }
 }
 
+
+function asegurarCamposFondosEditables(){
+  if(document.getElementById("loginBackgroundUrl") && document.getElementById("publicBackgroundUrl")) return;
+
+  const banner=document.getElementById("bannerUrl");
+  if(!banner) return;
+
+  const campoBanner=banner.closest(".campo-form") || banner.parentElement;
+
+  if(!document.getElementById("loginBackgroundUrl")){
+    const campo=document.createElement("div");
+    campo.className="campo-form";
+    campo.innerHTML=`
+      <label>URL de imagen para fondo del login</label>
+      <input id="loginBackgroundUrl" placeholder="https://.../assets/fondo-login.jpg">
+    `;
+    campoBanner.insertAdjacentElement("afterend", campo);
+  }
+
+  if(!document.getElementById("publicBackgroundUrl")){
+    const campo=document.createElement("div");
+    campo.className="campo-form";
+    campo.innerHTML=`
+      <label>URL de imagen para fondo de la página pública</label>
+      <input id="publicBackgroundUrl" placeholder="https://.../assets/fondo-publico.jpg">
+    `;
+    const login=document.getElementById("loginBackgroundUrl");
+    (login?.closest(".campo-form") || campoBanner).insertAdjacentElement("afterend", campo);
+  }
+}
+
+
 function config(){
   if(!tienePermiso("institucional")) return;
 
   const ref=doc(db,"configuracion","sitio");
   const f=document.getElementById("configForm");
   if(!f) return;
+
+  asegurarCamposFondosEditables();
 
   const bannerInput=document.getElementById("bannerUrl");
   if(bannerInput){
@@ -199,6 +233,8 @@ function config(){
     document.getElementById("subtituloEscuela").value=d.subtitulo||"";
     document.getElementById("logoUrl").value=d.logoUrl||"";
     if(document.getElementById("bannerUrl")) document.getElementById("bannerUrl").value=d.bannerUrl||"";
+    if(document.getElementById("loginBackgroundUrl")) document.getElementById("loginBackgroundUrl").value=d.loginBackgroundUrl||"";
+    if(document.getElementById("publicBackgroundUrl")) document.getElementById("publicBackgroundUrl").value=d.publicBackgroundUrl||"";
     actualizarBannerAdmin(d.bannerUrl || "");
 
     document.getElementById("alias").value=d.alias||"";
@@ -222,6 +258,8 @@ function config(){
       subtitulo:document.getElementById("subtituloEscuela").value.trim(),
       logoUrl:document.getElementById("logoUrl").value.trim(),
       bannerUrl:document.getElementById("bannerUrl")?.value.trim() || "",
+      loginBackgroundUrl:document.getElementById("loginBackgroundUrl")?.value.trim() || "",
+      publicBackgroundUrl:document.getElementById("publicBackgroundUrl")?.value.trim() || "",
       alias:document.getElementById("alias").value.trim(),
       cbu:document.getElementById("cbu").value.trim(),
       titularCuenta:document.getElementById("titularCuenta").value.trim(),
@@ -510,6 +548,15 @@ window.rechazarDonacion=async id=>{
   if(confirm("¿Rechazar?")) await updateDoc(doc(db,"donaciones",id),{estado:"rechazada",rechazadoPor:usuarioActualData.email,rechazado:serverTimestamp()});
 };
 
+
+window.desplegarEtapaObraAdmin = function(etapaKey){
+  document.querySelectorAll(`[data-admin-etapa-grupo="${etapaKey}"]`).forEach(el => {
+    el.classList.remove("oculto-etapa-obra-admin");
+  });
+  const btn = document.querySelector(`[data-admin-btn-etapa="${etapaKey}"]`);
+  if(btn) btn.remove();
+};
+
 function obra(){
   if(!tienePermiso("obra")) return;
   const f=document.getElementById("obraForm");
@@ -550,9 +597,10 @@ function obra(){
       return;
     }
 
-    etapas.forEach(etapa=>{
+    etapas.forEach((etapa, etapaIndex)=>{
       porEtapa[etapa].sort(ordenarObrasAdmin);
 
+      const etapaKey=`admin-etapa-${etapaIndex}`;
       const bloque=document.createElement("section");
       bloque.className="bloque-etapa-obra admin-etapa-obra";
       bloque.innerHTML=`
@@ -562,12 +610,14 @@ function obra(){
 
       const galeria=bloque.querySelector(".admin-galeria-etapa");
 
-      porEtapa[etapa].forEach(x=>{
+      porEtapa[etapa].forEach((x, indice)=>{
         const url=x.mediaUrl || x.imagenUrl || "";
         const tipo=x.tipoMedia || "imagen";
+        const ocultar=indice>=4;
 
         const div=document.createElement("article");
-        div.className="obra-card-pro admin-obra-mini-card";
+        div.className=`obra-card-pro admin-obra-mini-card ${ocultar ? "oculto-etapa-obra-admin" : ""}`;
+        div.setAttribute("data-admin-etapa-grupo", etapaKey);
         div.innerHTML=`
           <div class="obra-imagen-wrap">${renderMediaAdmin(url,tipo,x.titulo||"Obra")}</div>
           <div class="obra-card-info">
@@ -581,6 +631,30 @@ function obra(){
         `;
         galeria.appendChild(div);
       });
+
+      if(porEtapa[etapa].length>4){
+        const restantes=porEtapa[etapa].length-4;
+        const preview=porEtapa[etapa][4];
+        const urlPreview=preview.mediaUrl || preview.imagenUrl || "";
+
+        const mas=document.createElement("button");
+        mas.type="button";
+        mas.className="btn-mas-etapa-admin";
+        mas.setAttribute("data-admin-btn-etapa", etapaKey);
+        if(urlPreview){
+          mas.style.backgroundImage=`url('${urlPreview}')`;
+          mas.style.backgroundSize="cover";
+          mas.style.backgroundPosition="center";
+        }
+        mas.innerHTML=`
+          <div class="overlay-mas-etapa-admin">
+            <span class="mas-numero-admin">+${restantes}</span>
+            <span class="mas-texto-admin">Ver más</span>
+          </div>
+        `;
+        mas.addEventListener("click",()=>desplegarEtapaObraAdmin(etapaKey));
+        galeria.appendChild(mas);
+      }
 
       l.appendChild(bloque);
     });

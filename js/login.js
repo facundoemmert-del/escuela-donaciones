@@ -27,6 +27,28 @@ const crearCuentaBtn = document.getElementById("crearCuentaBtn");
 const recuperarBtn = document.getElementById("recuperarBtn");
 const mensaje = document.getElementById("loginMensaje");
 
+async function aplicarFondoLogin(){
+  try{
+    const snap = await getDoc(doc(db, "configuracion", "sitio"));
+    if(!snap.exists()) return;
+
+    const d = snap.data();
+    if(d.loginBackgroundUrl){
+      document.body.classList.add("fondo-login-activo");
+      document.body.style.setProperty("--fondo-login-url", `url("${d.loginBackgroundUrl}")`);
+    }else{
+      document.body.classList.remove("fondo-login-activo");
+      document.body.style.removeProperty("--fondo-login-url");
+    }
+  }catch(e){
+    console.log("No se pudo cargar fondo del login", e);
+  }
+}
+
+aplicarFondoLogin();
+
+
+
 function mostrar(texto) {
   mensaje.textContent = texto;
 }

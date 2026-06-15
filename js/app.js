@@ -102,13 +102,21 @@ onSnapshot(doc(db, "configuracion", "sitio"), s => {
   const hero = document.querySelector(".hero");
   if (hero) {
     if (d.bannerUrl) {
-      hero.style.backgroundImage =
-        `linear-gradient(135deg, rgba(7, 55, 32, .82), rgba(15, 73, 115, .82)), url("${d.bannerUrl}")`;
+      hero.style.backgroundImage = `url("${d.bannerUrl}")`;
       hero.style.backgroundSize = "cover";
       hero.style.backgroundPosition = "center";
+      hero.style.backgroundRepeat = "no-repeat";
     } else {
       hero.style.backgroundImage = "";
     }
+  }
+
+  if (d.publicBackgroundUrl) {
+    document.body.classList.add("fondo-publico-activo");
+    document.body.style.setProperty("--fondo-publico-url", `url("${d.publicBackgroundUrl}")`);
+  } else {
+    document.body.classList.remove("fondo-publico-activo");
+    document.body.style.removeProperty("--fondo-publico-url");
   }
 });
 
