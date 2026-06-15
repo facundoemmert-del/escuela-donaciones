@@ -102,7 +102,8 @@ onSnapshot(doc(db, "configuracion", "sitio"), s => {
   const hero = document.querySelector(".hero");
   if (hero) {
     if (d.bannerUrl) {
-     hero.style.backgroundImage = `url("${d.bannerUrl}")`;
+      hero.style.backgroundImage =
+        `linear-gradient(135deg, rgba(7, 55, 32, .82), rgba(15, 73, 115, .82)), url("${d.bannerUrl}")`;
       hero.style.backgroundSize = "cover";
       hero.style.backgroundPosition = "center";
     } else {
@@ -430,30 +431,18 @@ onSnapshot(query(collection(db, "obra")), snap => {
     });
 
     if(grupo.length > 4){
-
-  const restantes = grupo.length - 4;
-  const preview = grupo[4];
-
-  const mas = document.createElement("button");
-  mas.type = "button";
-  mas.className = "btn-mas-etapa";
-  mas.setAttribute("data-btn-etapa", etapaKey);
-
-  mas.style.backgroundImage = `url('${preview.url}')`;
-  mas.style.backgroundSize = "cover";
-  mas.style.backgroundPosition = "center";
-
-  mas.innerHTML = `
-    <div class="overlay-mas-etapa">
-      <span class="mas-numero">+${restantes}</span>
-      <span class="mas-texto">Ver más</span>
-    </div>
-  `;
-
-  mas.addEventListener("click", () => desplegarEtapaObra(etapaKey));
-
-  galeria.appendChild(mas);
-}
+      const restantes = grupo.length - 4;
+      const mas = document.createElement("button");
+      mas.type = "button";
+      mas.className = "btn-mas-etapa";
+      mas.setAttribute("data-btn-etapa", etapaKey);
+      mas.innerHTML = `
+        <span class="mas-icono">+</span>
+        Ver ${restantes} más
+      `;
+      mas.addEventListener("click", () => desplegarEtapaObra(etapaKey));
+      galeria.appendChild(mas);
+    }
 
     c.appendChild(bloque);
   });
