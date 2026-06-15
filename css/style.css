@@ -1730,3 +1730,47 @@ body:has(#loginForm) > p:not(:first-of-type) {
   }
 }
 
+
+/* ZIP 44 - Fondos editables: login y página pública */
+
+
+/* Fondo editable para login */
+body.fondo-login-activo,
+body.login-body.fondo-login-activo,
+body:has(#loginForm).fondo-login-activo {
+  background-image:
+    linear-gradient(135deg, rgba(15,79,47,.58), rgba(31,90,138,.58)),
+    var(--fondo-login-url) !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+}
+
+/* Fondo editable para la página pública */
+body.fondo-publico-activo {
+  background-image:
+    linear-gradient(180deg, rgba(246,248,251,.88), rgba(238,243,247,.92)),
+    var(--fondo-publico-url) !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+}
+
+/* Para que las secciones sigan legibles sobre el fondo */
+body.fondo-publico-activo .meta-general,
+body.fondo-publico-activo .objetivos,
+body.fondo-publico-activo .seccion-publica {
+  background: rgba(255,255,255,.72);
+  border-radius: 24px;
+  backdrop-filter: blur(8px);
+}
+
+body.fondo-publico-activo .card,
+body.fondo-publico-activo .bloque-etapa-obra {
+  background: rgba(255,255,255,.88) !important;
+  backdrop-filter: blur(6px);
+}
+
+
