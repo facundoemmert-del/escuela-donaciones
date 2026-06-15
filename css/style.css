@@ -2034,3 +2034,31 @@ body.publica-lista .hero {
   content: none !important;
   background: none !important;
 }
+
+/* Objetivos públicos en grilla */
+
+#contenedorObjetivos{
+    display:grid !important;
+    grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+    gap:20px !important;
+    align-items:start !important;
+}
+
+#contenedorObjetivos .card{
+    margin:0 !important;
+    height:100%;
+}
+
+/* Notebook */
+@media(max-width:1200px){
+    #contenedorObjetivos{
+        grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    }
+}
+
+/* Celular */
+@media(max-width:700px){
+    #contenedorObjetivos{
+        grid-template-columns:1fr !important;
+    }
+}
