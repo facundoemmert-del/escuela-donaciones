@@ -1,0 +1,23 @@
+ZIP 53 - PROYECTO CONSOLIDADO
+
+Este ZIP contiene el proyecto completo.
+
+SUBIR A GITHUB:
+1. Abrí la carpeta escuela-donaciones-main incluida en este ZIP.
+2. Copiá y reemplazá TODO su contenido en tu repositorio.
+3. Asegurate de subir también las carpetas assets, css y js.
+4. Confirmá los cambios (Commit changes).
+5. Esperá 1 o 2 minutos y abrí la página con Ctrl + F5.
+
+CAMBIOS INTEGRADOS:
+- Banner restaurado con imagen local de respaldo.
+- Logo local de respaldo en banner y pie.
+- El pie queda abajo aunque la pestaña tenga poco contenido.
+- Cantidad necesaria y precio unitario en objetivos.
+- Precio total calculado automáticamente.
+- Los objetivos nuevos comienzan con $0 recaudados.
+- Categorías públicas y detalle de objetivos conservados.
+- Versionado ?v=53 para evitar que el navegador use archivos viejos en caché.
+
+IMPORTANTE:
+No subas solo app.js. Reemplazá el proyecto completo para que HTML, CSS y JavaScript queden sincronizados.
