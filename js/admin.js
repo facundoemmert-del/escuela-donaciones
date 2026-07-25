@@ -63,7 +63,6 @@ function renderHistorialDonacionesAdmin(){
   });
 }
 
-
 function tienePermiso(p){
   return usuarioActualData&&(usuarioActualData.rol==="superadmin"||(usuarioActualData.permisos&&usuarioActualData.permisos[p]===true));
 }
@@ -150,8 +149,6 @@ function permisos(){
   document.querySelector(".tab-btn")?.click();
 }
 
-
-
 function numeroEtapaAdmin(etapa){
   const t=String(etapa||"").toLowerCase();
   const r={"i":1,"ii":2,"iii":3,"iv":4,"v":5,"vi":6,"vii":7,"viii":8,"ix":9,"x":10};
@@ -178,7 +175,6 @@ function actualizarBannerAdmin(url){
     header.style.backgroundImage = "";
   }
 }
-
 
 function asegurarCamposFondosEditables(){
   if(document.getElementById("loginBackgroundUrl") && document.getElementById("publicBackgroundUrl")) return;
@@ -209,7 +205,6 @@ function asegurarCamposFondosEditables(){
     (login?.closest(".campo-form") || campoBanner).insertAdjacentElement("afterend", campo);
   }
 }
-
 
 function config(){
   if(!tienePermiso("institucional")) return;
@@ -272,7 +267,6 @@ function config(){
   };
 }
 
-
 function actualizarSelectCategorias(){
   const select=document.getElementById("categoriaObjetivo");
   if(!select) return;
@@ -286,7 +280,7 @@ function actualizarSelectCategorias(){
     .forEach(c=>{
       const op=document.createElement("option");
       op.value=c.id;
-      op.textContent=`${c.icono ? c.icono+" " : ""}${c.nombre||"Sin nombre"}`;
+      op.textContent=c.nombre||"Sin nombre";
       op.dataset.nombre=c.nombre||"";
       select.appendChild(op);
     });
@@ -303,7 +297,7 @@ function renderCategorias(){
   lista.innerHTML="";
 
   const filtradas=categoriasCache
-    .filter(c=>`${c.nombre||""} ${c.descripcion||""} ${c.icono||""}`.toLowerCase().includes(q))
+    .filter(c=>`${c.nombre||""} ${c.descripcion||""}`.toLowerCase().includes(q))
     .sort((a,b)=>(a.nombre||"").localeCompare(b.nombre||"","es"));
 
   if(!filtradas.length){
@@ -315,7 +309,6 @@ function renderCategorias(){
     const card=document.createElement("article");
     card.className="categoria-card-admin";
     card.innerHTML=`
-      <div class="categoria-icono-admin">${c.icono||"📁"}</div>
       <div class="categoria-datos-admin">
         <h3>${c.nombre||"Sin nombre"}</h3>
         <p>${c.descripcion||"Sin descripción"}</p>
@@ -341,8 +334,7 @@ function categorias(){
 
     const nombre=document.getElementById("categoriaNombre").value.trim();
     const descripcion=document.getElementById("categoriaDescripcion").value.trim();
-    const icono=document.getElementById("categoriaIcono").value.trim();
-
+  
     if(!nombre || !descripcion){
       alert("Completá el nombre y la descripción de la categoría.");
       return;
@@ -357,7 +349,6 @@ function categorias(){
     await addDoc(collection(db,"categorias"),{
       nombre,
       descripcion,
-      icono,
       creado:serverTimestamp()
     });
 
@@ -386,9 +377,6 @@ window.abrirEditorCategoria=id=>{
       <label>Descripción</label>
       <input id="edit-categoria-descripcion-${id}" value="${limpiarTexto(c.descripcion)}" placeholder="Descripción">
 
-      <label>Icono o emoji</label>
-      <input id="edit-categoria-icono-${id}" value="${limpiarTexto(c.icono)}" placeholder="Ej.: 🚻">
-
       <div class="acciones-modal">
         <button onclick="guardarCategoria('${id}')">Guardar cambios</button>
         <button type="button" onclick="cerrarModalAdmin()">Cancelar</button>
@@ -400,7 +388,6 @@ window.abrirEditorCategoria=id=>{
 window.guardarCategoria=async id=>{
   const nombre=document.getElementById("edit-categoria-nombre-"+id).value.trim();
   const descripcion=document.getElementById("edit-categoria-descripcion-"+id).value.trim();
-  const icono=document.getElementById("edit-categoria-icono-"+id).value.trim();
 
   if(!nombre || !descripcion){
     alert("El nombre y la descripción son obligatorios.");
@@ -416,7 +403,6 @@ window.guardarCategoria=async id=>{
   await updateDoc(doc(db,"categorias",id),{
     nombre,
     descripcion,
-    icono,
     actualizado:serverTimestamp()
   });
 
@@ -425,7 +411,6 @@ window.guardarCategoria=async id=>{
   for(const objetivo of relacionados){
     await updateDoc(doc(db,"objetivos",objetivo.id),{
       categoriaNombre:nombre,
-      categoriaIcono:icono
     });
   }
 
@@ -446,7 +431,6 @@ window.eliminarCategoria=async id=>{
     await deleteDoc(doc(db,"categorias",id));
   }
 };
-
 
 function objetivos(){
   if(!tienePermiso("objetivos")) return;
@@ -472,7 +456,6 @@ function objetivos(){
       descripcion:document.getElementById("descripcion").value.trim(),
       categoriaId,
       categoriaNombre:categoria.nombre||"",
-      categoriaIcono:categoria.icono||"",
       precio,
       recaudado:Math.min(rec,precio),
       imagenUrl:document.getElementById("imagenUrl").value.trim(),
@@ -492,7 +475,6 @@ function objetivos(){
 
   bus.oninput=renderObjetivos;
 }
-
 
 function obtenerYoutubeId(url){
   if(!url) return "";
@@ -572,7 +554,7 @@ function renderObjetivos(){
       div.className="card";
       div.innerHTML=`
         ${o.imagenUrl?`<img class="imagen-admin" src="${limpiarTexto(o.imagenUrl)}" alt="${limpiarTexto(o.nombre)||"Objetivo"}">`:""}
-        <div class="objetivo-categoria-admin">${o.categoriaIcono||"📁"} ${o.categoriaNombre||"Sin categoría"}</div>
+        <div class="objetivo-categoria-admin">${o.categoriaNombre||"Sin categoría"}</div>
         <h3>${o.nombre||"Sin nombre"}</h3>
         <p>${o.descripcion||"Sin descripción"}</p>
         <div class="barra"><div class="progreso" style="width:${porcentaje}%"></div></div>
@@ -610,7 +592,7 @@ window.abrirEditorObjetivo=id=>{
         ${categoriasCache
           .slice()
           .sort((a,b)=>(a.nombre||"").localeCompare(b.nombre||"","es"))
-          .map(c=>`<option value="${c.id}" ${c.id===o.categoriaId?"selected":""}>${c.icono?c.icono+" ":""}${c.nombre||"Sin nombre"}</option>`)
+          .map(c=>`<option value="${c.id}" ${c.id===o.categoriaId?"selected":""}>${c.nombre||"Sin nombre"}</option>`)
           .join("")}
       </select>
 
@@ -746,7 +728,6 @@ window.aprobarDonacion=async(id,obj,m)=>{
 window.rechazarDonacion=async id=>{
   if(confirm("¿Rechazar?")) await updateDoc(doc(db,"donaciones",id),{estado:"rechazada",rechazadoPor:usuarioActualData.email,rechazado:serverTimestamp()});
 };
-
 
 window.desplegarEtapaObraAdmin = function(etapaKey){
   document.querySelectorAll(`[data-admin-etapa-grupo="${etapaKey}"]`).forEach(el => {
