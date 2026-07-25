@@ -12,6 +12,7 @@ const SUPERADMIN_UID="IArWgSKZF4a8eu0j3eoWS4el2P02";
 
 let usuarioActualData=null;
 let objetivosCache=[];
+let categoriasCache=[];
 let adminsCreados={};
 let adminsAutorizados={};
 let donacionesAprobadasCache=[];
@@ -122,6 +123,7 @@ function iniciar(){
   tabs();
   permisos();
   config();
+  categorias();
   objetivos();
   donaciones();
   obra();
@@ -270,6 +272,182 @@ function config(){
   };
 }
 
+
+function actualizarSelectCategorias(){
+  const select=document.getElementById("categoriaObjetivo");
+  if(!select) return;
+
+  const valorActual=select.value;
+  select.innerHTML='<option value="">Seleccionar categoría</option>';
+
+  categoriasCache
+    .slice()
+    .sort((a,b)=>(a.nombre||"").localeCompare(b.nombre||"","es"))
+    .forEach(c=>{
+      const op=document.createElement("option");
+      op.value=c.id;
+      op.textContent=`${c.icono ? c.icono+" " : ""}${c.nombre||"Sin nombre"}`;
+      op.dataset.nombre=c.nombre||"";
+      select.appendChild(op);
+    });
+
+  if([...select.options].some(o=>o.value===valorActual)) select.value=valorActual;
+}
+
+function renderCategorias(){
+  const lista=document.getElementById("listaCategorias");
+  const bus=document.getElementById("buscadorCategorias");
+  if(!lista) return;
+
+  const q=(bus?.value||"").trim().toLowerCase();
+  lista.innerHTML="";
+
+  const filtradas=categoriasCache
+    .filter(c=>`${c.nombre||""} ${c.descripcion||""} ${c.icono||""}`.toLowerCase().includes(q))
+    .sort((a,b)=>(a.nombre||"").localeCompare(b.nombre||"","es"));
+
+  if(!filtradas.length){
+    lista.innerHTML='<div class="categoria-vacia">No hay categorías que coincidan con la búsqueda.</div>';
+    return;
+  }
+
+  filtradas.forEach(c=>{
+    const card=document.createElement("article");
+    card.className="categoria-card-admin";
+    card.innerHTML=`
+      <div class="categoria-icono-admin">${c.icono||"📁"}</div>
+      <div class="categoria-datos-admin">
+        <h3>${c.nombre||"Sin nombre"}</h3>
+        <p>${c.descripcion||"Sin descripción"}</p>
+      </div>
+      <div class="categoria-acciones-admin">
+        <button onclick="abrirEditorCategoria('${c.id}')">Editar</button>
+        <button class="btn-danger" onclick="eliminarCategoria('${c.id}')">Eliminar</button>
+      </div>
+    `;
+    lista.appendChild(card);
+  });
+}
+
+function categorias(){
+  if(!tienePermiso("objetivos")) return;
+
+  const form=document.getElementById("categoriaForm");
+  const buscador=document.getElementById("buscadorCategorias");
+  if(!form) return;
+
+  form.onsubmit=async e=>{
+    e.preventDefault();
+
+    const nombre=document.getElementById("categoriaNombre").value.trim();
+    const descripcion=document.getElementById("categoriaDescripcion").value.trim();
+    const icono=document.getElementById("categoriaIcono").value.trim();
+
+    if(!nombre || !descripcion){
+      alert("Completá el nombre y la descripción de la categoría.");
+      return;
+    }
+
+    const repetida=categoriasCache.some(c=>(c.nombre||"").trim().toLowerCase()===nombre.toLowerCase());
+    if(repetida){
+      alert("Ya existe una categoría con ese nombre.");
+      return;
+    }
+
+    await addDoc(collection(db,"categorias"),{
+      nombre,
+      descripcion,
+      icono,
+      creado:serverTimestamp()
+    });
+
+    form.reset();
+  };
+
+  onSnapshot(query(collection(db,"categorias")),snap=>{
+    categoriasCache=[];
+    snap.forEach(d=>categoriasCache.push({id:d.id,...d.data()}));
+    renderCategorias();
+    actualizarSelectCategorias();
+  });
+
+  if(buscador) buscador.oninput=renderCategorias;
+}
+
+window.abrirEditorCategoria=id=>{
+  const c=categoriasCache.find(x=>x.id===id);
+  if(!c) return alert("No se encontró la categoría.");
+
+  crearModalAdmin("Editar categoría", `
+    <div class="form-modal-admin">
+      <label>Nombre</label>
+      <input id="edit-categoria-nombre-${id}" value="${limpiarTexto(c.nombre)}" placeholder="Nombre">
+
+      <label>Descripción</label>
+      <input id="edit-categoria-descripcion-${id}" value="${limpiarTexto(c.descripcion)}" placeholder="Descripción">
+
+      <label>Icono o emoji</label>
+      <input id="edit-categoria-icono-${id}" value="${limpiarTexto(c.icono)}" placeholder="Ej.: 🚻">
+
+      <div class="acciones-modal">
+        <button onclick="guardarCategoria('${id}')">Guardar cambios</button>
+        <button type="button" onclick="cerrarModalAdmin()">Cancelar</button>
+      </div>
+    </div>
+  `);
+};
+
+window.guardarCategoria=async id=>{
+  const nombre=document.getElementById("edit-categoria-nombre-"+id).value.trim();
+  const descripcion=document.getElementById("edit-categoria-descripcion-"+id).value.trim();
+  const icono=document.getElementById("edit-categoria-icono-"+id).value.trim();
+
+  if(!nombre || !descripcion){
+    alert("El nombre y la descripción son obligatorios.");
+    return;
+  }
+
+  const repetida=categoriasCache.some(c=>c.id!==id && (c.nombre||"").trim().toLowerCase()===nombre.toLowerCase());
+  if(repetida){
+    alert("Ya existe otra categoría con ese nombre.");
+    return;
+  }
+
+  await updateDoc(doc(db,"categorias",id),{
+    nombre,
+    descripcion,
+    icono,
+    actualizado:serverTimestamp()
+  });
+
+  /* Actualiza también el nombre guardado en objetivos de esa categoría */
+  const relacionados=objetivosCache.filter(o=>o.categoriaId===id);
+  for(const objetivo of relacionados){
+    await updateDoc(doc(db,"objetivos",objetivo.id),{
+      categoriaNombre:nombre,
+      categoriaIcono:icono
+    });
+  }
+
+  cerrarModalAdmin();
+};
+
+window.eliminarCategoria=async id=>{
+  const c=categoriasCache.find(x=>x.id===id);
+  if(!c) return;
+
+  const usados=objetivosCache.filter(o=>o.categoriaId===id);
+  if(usados.length){
+    alert(`No se puede eliminar "${c.nombre}" porque tiene ${usados.length} objetivo(s) asociado(s). Primero cambiá esos objetivos de categoría.`);
+    return;
+  }
+
+  if(confirm(`¿Seguro que querés eliminar la categoría "${c.nombre}"?`)){
+    await deleteDoc(doc(db,"categorias",id));
+  }
+};
+
+
 function objetivos(){
   if(!tienePermiso("objetivos")) return;
 
@@ -281,10 +459,20 @@ function objetivos(){
     e.preventDefault();
     const precio=Number(document.getElementById("precio").value);
     const rec=Number(document.getElementById("recaudado").value||0);
+    const categoriaId=document.getElementById("categoriaObjetivo")?.value || "";
+    const categoria=categoriasCache.find(c=>c.id===categoriaId);
+
+    if(!categoriaId || !categoria){
+      alert("Seleccioná una categoría para el objetivo.");
+      return;
+    }
 
     await addDoc(collection(db,"objetivos"),{
       nombre:document.getElementById("nombre").value.trim(),
       descripcion:document.getElementById("descripcion").value.trim(),
+      categoriaId,
+      categoriaNombre:categoria.nombre||"",
+      categoriaIcono:categoria.icono||"",
       precio,
       recaudado:Math.min(rec,precio),
       imagenUrl:document.getElementById("imagenUrl").value.trim(),
@@ -372,7 +560,7 @@ function renderObjetivos(){
   l.innerHTML="";
 
   objetivosCache
-    .filter(o=>`${o.nombre||""} ${o.descripcion||""}`.toLowerCase().includes(q))
+    .filter(o=>`${o.nombre||""} ${o.descripcion||""} ${o.categoriaNombre||""}`.toLowerCase().includes(q))
     .forEach(o=>{
       const precio=Number(o.precio||0);
       const rec=Math.min(Number(o.recaudado||0),precio);
@@ -384,6 +572,7 @@ function renderObjetivos(){
       div.className="card";
       div.innerHTML=`
         ${o.imagenUrl?`<img class="imagen-admin" src="${limpiarTexto(o.imagenUrl)}" alt="${limpiarTexto(o.nombre)||"Objetivo"}">`:""}
+        <div class="objetivo-categoria-admin">${o.categoriaIcono||"📁"} ${o.categoriaNombre||"Sin categoría"}</div>
         <h3>${o.nombre||"Sin nombre"}</h3>
         <p>${o.descripcion||"Sin descripción"}</p>
         <div class="barra"><div class="progreso" style="width:${porcentaje}%"></div></div>
@@ -414,6 +603,16 @@ window.abrirEditorObjetivo=id=>{
 
       <label>Descripción</label>
       <input id="edit-descripcion-${id}" value="${limpiarTexto(o.descripcion)}" placeholder="Descripción">
+
+      <label>Categoría</label>
+      <select id="edit-categoria-${id}">
+        <option value="">Seleccionar categoría</option>
+        ${categoriasCache
+          .slice()
+          .sort((a,b)=>(a.nombre||"").localeCompare(b.nombre||"","es"))
+          .map(c=>`<option value="${c.id}" ${c.id===o.categoriaId?"selected":""}>${c.icono?c.icono+" ":""}${c.nombre||"Sin nombre"}</option>`)
+          .join("")}
+      </select>
 
       <label>Precio actualizado</label>
       <input id="edit-precio-${id}" type="number" value="${precio}" placeholder="Precio">
