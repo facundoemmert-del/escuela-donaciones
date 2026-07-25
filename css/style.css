@@ -2391,3 +2391,50 @@ body.fondo-publico-activo .seccion-publica {
     grid-template-columns: 1fr !important;
   }
 }
+/* Restaurar banner y mantener el pie al fondo */
+
+/* El banner vuelve a mostrarse cuando la configuración pública terminó de cargar. */
+body.publica-lista .hero {
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important;
+}
+
+/* Conserva la imagen propia del banner, separada del fondo general de la página. */
+body.publica-lista .hero {
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+}
+
+/* Página pública de altura completa. */
+body.fondo-publico-activo {
+  min-height: 100vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* El contenido ocupa el espacio disponible aunque una pestaña tenga pocos datos. */
+body.fondo-publico-activo main {
+  flex: 1 0 auto !important;
+  width: 100%;
+}
+
+/* El pie queda al final de la pantalla y no sube hasta la mitad. */
+body.fondo-publico-activo footer {
+  margin-top: auto !important;
+  flex-shrink: 0 !important;
+  width: 100%;
+}
+
+/* Altura mínima del contenido de cada pestaña pública. */
+body.fondo-publico-activo .public-panel.activo {
+  min-height: calc(100vh - 500px);
+}
+
+/* En celulares se conserva el pie abajo sin generar demasiado espacio vacío. */
+@media (max-width: 800px) {
+  body.fondo-publico-activo .public-panel.activo {
+    min-height: calc(100vh - 430px);
+  }
+}
