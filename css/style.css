@@ -2082,7 +2082,7 @@ body.publica-lista .hero {
 }
 
 .categoria-form {
-  grid-template-columns: repeat(3, minmax(0,1fr)) !important;
+  grid-template-columns: repeat(2, minmax(0,1fr)) !important;
   align-items: end;
 }
 
@@ -2116,17 +2116,6 @@ body.publica-lista .hero {
   inset: 0 auto 0 0;
   width: 6px;
   background: linear-gradient(180deg,#0f4f2f,#39bf65);
-}
-
-.categoria-icono-admin {
-  width: 52px;
-  height: 52px;
-  display: grid;
-  place-items: center;
-  font-size: 27px;
-  background: #eaf5ee;
-  border-radius: 16px;
-  margin-bottom: 14px;
 }
 
 .categoria-datos-admin {
