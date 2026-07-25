@@ -13,6 +13,7 @@ const SUPERADMIN_UID="IArWgSKZF4a8eu0j3eoWS4el2P02";
 let usuarioActualData=null;
 let objetivosCache=[];
 let categoriasCache=[];
+let impuestosCache=[];
 let adminsCreados={};
 let adminsAutorizados={};
 let donacionesAprobadasCache=[];
@@ -123,6 +124,7 @@ function iniciar(){
   permisos();
   config();
   categorias();
+  impuestos();
   objetivos();
   donaciones();
   obra();
@@ -432,76 +434,149 @@ window.eliminarCategoria=async id=>{
   }
 };
 
+
+function numeroSeguro(valor){
+  const n=Number(String(valor??"").replace(",","."));
+  return Number.isFinite(n)?n:0;
+}
+
+function calcularTotales(cantidad,precioUnitario,impuestos=[]){
+  const subtotal=Math.max(0,numeroSeguro(cantidad))*Math.max(0,numeroSeguro(precioUnitario));
+  const detalle=(impuestos||[]).map(i=>{
+    const porcentaje=Math.max(0,numeroSeguro(i.porcentaje));
+    return {id:i.id,nombre:i.nombre||"Impuesto",porcentaje,monto:subtotal*porcentaje/100};
+  });
+  const montoImpuestos=detalle.reduce((a,i)=>a+i.monto,0);
+  return {subtotal,detalle,montoImpuestos,precio:subtotal+montoImpuestos};
+}
+
+function seleccionadosDe(contenedorId){
+  const cont=document.getElementById(contenedorId);
+  if(!cont) return [];
+  return [...cont.querySelectorAll('input[data-impuesto-id]:checked')].map(ch=>{
+    const i=impuestosCache.find(x=>x.id===ch.dataset.impuestoId);
+    return i?{id:i.id,nombre:i.nombre||"Impuesto",porcentaje:numeroSeguro(i.porcentaje)}:null;
+  }).filter(Boolean);
+}
+
+function renderSelectorImpuestos(contenedorId,seleccionados=[]){
+  const cont=document.getElementById(contenedorId);
+  if(!cont) return;
+  const ids=new Set((seleccionados||[]).map(i=>typeof i==="string"?i:i.id));
+  if(!impuestosCache.length){
+    cont.innerHTML='<p class="texto-suave">Todavía no hay impuestos creados. El producto se calculará sin impuestos.</p>';
+    return;
+  }
+  cont.innerHTML=impuestosCache.slice().sort((a,b)=>(a.nombre||"").localeCompare(b.nombre||"","es")).map(i=>`
+    <label class="impuesto-check">
+      <input type="checkbox" data-impuesto-id="${i.id}" ${ids.has(i.id)?"checked":""}>
+      <span><strong>${limpiarTexto(i.nombre||"Impuesto")}</strong><small>${numeroSeguro(i.porcentaje)}%</small></span>
+    </label>`).join("");
+}
+
+function recalcularObjetivoNuevo(){
+  const c=numeroSeguro(document.getElementById("cantidadNecesaria")?.value||1);
+  const u=numeroSeguro(document.getElementById("precioUnitario")?.value||0);
+  const t=calcularTotales(c,u,seleccionadosDe("impuestosAplicables"));
+  const subtotal=document.getElementById("subtotalObjetivo");
+  const impuestos=document.getElementById("montoImpuestosObjetivo");
+  const precio=document.getElementById("precio");
+  if(subtotal) subtotal.value=t.subtotal.toFixed(2);
+  if(impuestos) impuestos.value=t.montoImpuestos.toFixed(2);
+  if(precio) precio.value=t.precio.toFixed(2);
+}
+
+function renderImpuestos(){
+  const lista=document.getElementById("listaImpuestos");
+  if(!lista) return;
+  if(!impuestosCache.length){
+    lista.innerHTML='<p class="texto-suave">No hay impuestos cargados.</p>';
+  }else{
+    lista.innerHTML=impuestosCache.slice().sort((a,b)=>(a.nombre||"").localeCompare(b.nombre||"","es")).map(i=>`
+      <div class="impuesto-item-admin">
+        <div><strong>${limpiarTexto(i.nombre||"Impuesto")}</strong><span>${numeroSeguro(i.porcentaje)}%</span></div>
+        <div class="impuesto-acciones">
+          <button type="button" data-tax-edit="${i.id}">Editar</button>
+          <button type="button" class="btn-danger" data-tax-delete="${i.id}">Eliminar</button>
+        </div>
+      </div>`).join("");
+  }
+  renderSelectorImpuestos("impuestosAplicables");
+  recalcularObjetivoNuevo();
+}
+
+function impuestos(){
+  if(!tienePermiso("objetivos")) return;
+  const form=document.getElementById("impuestoForm");
+  const btn=document.getElementById("agregarImpuestoBtn");
+  const estado=document.getElementById("estadoImpuesto");
+  const guardar=async()=>{
+    const nombre=document.getElementById("impuestoNombre")?.value.trim()||"";
+    const porcentaje=numeroSeguro(document.getElementById("impuestoPorcentaje")?.value);
+    if(!nombre) return alert("Ingresá el nombre del impuesto.");
+    if(porcentaje<=0) return alert("El porcentaje debe ser mayor a 0.");
+    try{
+      btn.disabled=true; btn.textContent="Guardando...";
+      await addDoc(collection(db,"impuestos"),{nombre,porcentaje,creado:serverTimestamp()});
+      form.reset(); if(estado) estado.textContent=`Impuesto "${nombre}" agregado correctamente.`;
+    }catch(e){console.error(e); alert(`No se pudo crear el impuesto${e.code?` (${e.code})`:""}.`)}
+    finally{btn.disabled=false;btn.textContent="Agregar impuesto";}
+  };
+  btn?.addEventListener("click",guardar);
+  form?.addEventListener("submit",e=>{e.preventDefault();guardar();});
+  document.getElementById("listaImpuestos")?.addEventListener("click",async e=>{
+    const edit=e.target.closest("[data-tax-edit]");
+    const del=e.target.closest("[data-tax-delete]");
+    if(edit){
+      const i=impuestosCache.find(x=>x.id===edit.dataset.taxEdit); if(!i)return;
+      const nombre=prompt("Nombre del impuesto:",i.nombre||""); if(nombre===null)return;
+      const porc=prompt("Porcentaje:",String(numeroSeguro(i.porcentaje))); if(porc===null)return;
+      const p=numeroSeguro(porc); if(!nombre.trim()||p<=0)return alert("Datos inválidos.");
+      await updateDoc(doc(db,"impuestos",i.id),{nombre:nombre.trim(),porcentaje:p,actualizado:serverTimestamp()});
+    }
+    if(del){
+      const i=impuestosCache.find(x=>x.id===del.dataset.taxDelete); if(!i)return;
+      const usados=objetivosCache.filter(o=>(o.impuestos||[]).some(x=>(typeof x==="string"?x:x.id)===i.id));
+      if(usados.length)return alert(`No se puede eliminar porque está aplicado a ${usados.length} objetivo(s). Primero quitá el impuesto de esos objetivos.`);
+      if(confirm(`¿Eliminar el impuesto "${i.nombre}"?`)) await deleteDoc(doc(db,"impuestos",i.id));
+    }
+  });
+  onSnapshot(query(collection(db,"impuestos")),snap=>{
+    impuestosCache=[]; snap.forEach(d=>impuestosCache.push({id:d.id,...d.data()})); renderImpuestos(); renderObjetivos();
+  },e=>{console.error("Impuestos:",e);if(estado)estado.textContent=`No se pudieron cargar los impuestos (${e.code||"error"}).`;});
+}
+
 function objetivos(){
   if(!tienePermiso("objetivos")) return;
-
   const f=document.getElementById("objetivoForm");
   const bus=document.getElementById("buscadorObjetivos");
   if(!f) return;
 
-  const cantidadInput=document.getElementById("cantidadNecesaria");
-  const precioUnitarioInput=document.getElementById("precioUnitario");
-  const precioTotalInput=document.getElementById("precio");
-
-  const recalcularPrecioTotal=()=>{
-    const cantidad=Math.max(1,Number(cantidadInput?.value||1));
-    const precioUnitario=Math.max(0,Number(precioUnitarioInput?.value||0));
-    if(precioTotalInput) precioTotalInput.value=(cantidad*precioUnitario).toFixed(2);
-  };
-
-  cantidadInput?.addEventListener("input",recalcularPrecioTotal);
-  precioUnitarioInput?.addEventListener("input",recalcularPrecioTotal);
-  recalcularPrecioTotal();
+  document.getElementById("cantidadNecesaria")?.addEventListener("input",recalcularObjetivoNuevo);
+  document.getElementById("precioUnitario")?.addEventListener("input",recalcularObjetivoNuevo);
+  document.getElementById("impuestosAplicables")?.addEventListener("change",recalcularObjetivoNuevo);
+  recalcularObjetivoNuevo();
 
   f.onsubmit=async e=>{
     e.preventDefault();
-    const cantidadNecesaria=Math.max(1,Number(document.getElementById("cantidadNecesaria").value||1));
-    const precioUnitario=Math.max(0,Number(document.getElementById("precioUnitario").value||0));
-    const precio=cantidadNecesaria*precioUnitario;
-    const categoriaId=document.getElementById("categoriaObjetivo")?.value || "";
+    const cantidadNecesaria=Math.max(1,numeroSeguro(document.getElementById("cantidadNecesaria").value||1));
+    const precioUnitario=Math.max(0,numeroSeguro(document.getElementById("precioUnitario").value||0));
+    const impuestosAplicados=seleccionadosDe("impuestosAplicables");
+    const totales=calcularTotales(cantidadNecesaria,precioUnitario,impuestosAplicados);
+    const categoriaId=document.getElementById("categoriaObjetivo")?.value||"";
     const categoria=categoriasCache.find(c=>c.id===categoriaId);
-
-    if(!categoriaId || !categoria){
-      alert("Seleccioná una categoría para el objetivo.");
-      return;
-    }
-
-    if(cantidadNecesaria<1){
-      alert("La cantidad necesaria debe ser de al menos 1.");
-      return;
-    }
-
-    if(precioUnitario<=0){
-      alert("El precio unitario debe ser mayor a 0.");
-      return;
-    }
-
+    if(!categoria) return alert("Seleccioná una categoría para el objetivo.");
+    if(precioUnitario<=0) return alert("El precio unitario debe ser mayor a 0.");
     await addDoc(collection(db,"objetivos"),{
-      nombre:document.getElementById("nombre").value.trim(),
-      descripcion:document.getElementById("descripcion").value.trim(),
-      categoriaId,
-      categoriaNombre:categoria.nombre||"",
-      cantidadNecesaria,
-      precioUnitario,
-      precio,
-      recaudado:0,
-      imagenUrl:document.getElementById("imagenUrl").value.trim(),
-      urgente:document.getElementById("urgente").checked,
-      creado:serverTimestamp()
+      nombre:document.getElementById("nombre").value.trim(),descripcion:document.getElementById("descripcion").value.trim(),
+      categoriaId,categoriaNombre:categoria.nombre||"",cantidadNecesaria,precioUnitario,
+      subtotal:totales.subtotal,impuestos:impuestosAplicados,montoImpuestos:totales.montoImpuestos,precio:totales.precio,
+      recaudado:0,imagenUrl:document.getElementById("imagenUrl").value.trim(),urgente:document.getElementById("urgente").checked,creado:serverTimestamp()
     });
-
-    f.reset();
-    document.getElementById("cantidadNecesaria").value=1;
-    recalcularPrecioTotal();
+    f.reset();document.getElementById("cantidadNecesaria").value=1;renderSelectorImpuestos("impuestosAplicables");recalcularObjetivoNuevo();
   };
-
-  onSnapshot(query(collection(db,"objetivos")),s=>{
-    objetivosCache=[];
-    s.forEach(d=>objetivosCache.push({id:d.id,...d.data()}));
-    renderObjetivos();
-  });
-
-  bus.oninput=renderObjetivos;
+  onSnapshot(query(collection(db,"objetivos")),s=>{objetivosCache=[];s.forEach(d=>objetivosCache.push({id:d.id,...d.data()}));renderObjetivos();});
+  if(bus)bus.oninput=renderObjetivos;
 }
 
 function obtenerYoutubeId(url){
@@ -562,153 +637,55 @@ function crearModalAdmin(titulo, contenidoHtml){
 window.cerrarModalAdmin=cerrarModalAdmin;
 
 function renderObjetivos(){
-  const l=document.getElementById("listaObjetivos");
-  const bus=document.getElementById("buscadorObjetivos");
-  if(!l) return;
-
-  const q=(bus?.value||"").toLowerCase();
-  l.innerHTML="";
-
-  objetivosCache
-    .filter(o=>`${o.nombre||""} ${o.descripcion||""} ${o.categoriaNombre||""}`.toLowerCase().includes(q))
-    .forEach(o=>{
-      const precio=Number(o.precio||0);
-      const cantidadNecesaria=Math.max(1,Number(o.cantidadNecesaria||1));
-      const precioUnitario=Number(o.precioUnitario||precio);
-      const rec=Math.min(Number(o.recaudado||0),precio);
-      const faltante=Math.max(0,precio-rec);
-      const completado=precio>0&&rec>=precio;
-      const porcentaje=precio>0?Math.min(100,Math.round((rec/precio)*100)):0;
-
-      const div=document.createElement("div");
-      div.className="card";
-      div.innerHTML=`
-        ${o.imagenUrl?`<img class="imagen-admin" src="${limpiarTexto(o.imagenUrl)}" alt="${limpiarTexto(o.nombre)||"Objetivo"}">`:""}
-        <div class="objetivo-categoria-admin">${o.categoriaNombre||"Sin categoría"}</div>
-        <h3>${o.nombre||"Sin nombre"}</h3>
-        <p>${o.descripcion||"Sin descripción"}</p>
-        <div class="barra"><div class="progreso" style="width:${porcentaje}%"></div></div>
-        <p><strong>Cantidad necesaria:</strong> ${cantidadNecesaria}</p>
-        <p><strong>Precio unitario:</strong> ${formatoPesos.format(precioUnitario)}</p>
-        <p><strong>Precio total:</strong> ${formatoPesos.format(precio)}</p>
-        <p><strong>Recaudado:</strong> ${formatoPesos.format(rec)}</p>
-        <p><strong>Faltante:</strong> ${formatoPesos.format(faltante)}</p>
-        <p>${completado?"✅ Objetivo completado":"Objetivo abierto"}</p>
-
-        <button onclick="abrirEditorObjetivo('${o.id}')">Editar datos</button>
-        <button class="btn-danger" onclick="eliminarObjetivo('${o.id}')">Eliminar</button>
-      `;
-      l.appendChild(div);
-    });
+  const l=document.getElementById("listaObjetivos");const bus=document.getElementById("buscadorObjetivos");if(!l)return;
+  const q=(bus?.value||"").toLowerCase();l.innerHTML="";
+  objetivosCache.filter(o=>`${o.nombre||""} ${o.descripcion||""} ${o.categoriaNombre||""}`.toLowerCase().includes(q)).forEach(o=>{
+    const cantidad=Math.max(1,numeroSeguro(o.cantidadNecesaria||1));
+    const unitario=numeroSeguro(o.precioUnitario||o.precio||0);
+    const impuestos=Array.isArray(o.impuestos)?o.impuestos:[];
+    const calc=calcularTotales(cantidad,unitario,impuestos);
+    const precio=numeroSeguro(o.precio||calc.precio);const rec=Math.min(numeroSeguro(o.recaudado),precio);const falt=Math.max(0,precio-rec);const pct=precio?Math.min(100,Math.round(rec/precio*100)):0;
+    const div=document.createElement("div");div.className="card";div.innerHTML=`
+      ${o.imagenUrl?`<img class="imagen-admin" src="${limpiarTexto(o.imagenUrl)}" alt="${limpiarTexto(o.nombre)}">`:""}
+      <div class="objetivo-categoria-admin">${o.categoriaNombre||"Sin categoría"}</div><h3>${o.nombre||"Sin nombre"}</h3><p>${o.descripcion||""}</p>
+      <div class="barra"><div class="progreso" style="width:${pct}%"></div></div>
+      <p><strong>Cantidad:</strong> ${cantidad}</p><p><strong>Precio unitario sin impuestos:</strong> ${formatoPesos.format(unitario)}</p>
+      <p><strong>Subtotal:</strong> ${formatoPesos.format(calc.subtotal)}</p>
+      ${impuestos.length?`<div class="impuestos-resumen-card"><strong>Impuestos:</strong>${impuestos.map(i=>`<span>${limpiarTexto(i.nombre)} ${numeroSeguro(i.porcentaje)}%: ${formatoPesos.format(calc.subtotal*numeroSeguro(i.porcentaje)/100)}</span>`).join("")}</div>`:'<p><strong>Impuestos:</strong> No aplica</p>'}
+      <p><strong>Total impuestos:</strong> ${formatoPesos.format(calc.montoImpuestos)}</p><p><strong>Precio total:</strong> ${formatoPesos.format(precio)}</p>
+      <p><strong>Recaudado:</strong> ${formatoPesos.format(rec)}</p><p><strong>Faltante:</strong> ${formatoPesos.format(falt)}</p>
+      <button onclick="abrirEditorObjetivo('${o.id}')">Editar datos</button><button class="btn-danger" onclick="eliminarObjetivo('${o.id}')">Eliminar</button>`;l.appendChild(div);
+  });
 }
 
 window.abrirEditorObjetivo=id=>{
-  const o=objetivosCache.find(obj=>obj.id===id);
-  if(!o) return alert("No se encontró el objetivo.");
-
-  const precio=Number(o.precio||0);
-  const cantidadNecesaria=Math.max(1,Number(o.cantidadNecesaria||1));
-  const precioUnitario=Number(o.precioUnitario||precio);
-  const rec=Math.min(Number(o.recaudado||0),precio);
-  const faltante=Math.max(0,precio-rec);
-
-  crearModalAdmin("Editar objetivo", `
-    <div class="form-modal-admin">
-      <label>Nombre</label>
-      <input id="edit-nombre-${id}" value="${limpiarTexto(o.nombre)}" placeholder="Nombre">
-
-      <label>Descripción</label>
-      <input id="edit-descripcion-${id}" value="${limpiarTexto(o.descripcion)}" placeholder="Descripción">
-
-      <label>Categoría</label>
-      <select id="edit-categoria-${id}">
-        <option value="">Seleccionar categoría</option>
-        ${categoriasCache
-          .slice()
-          .sort((a,b)=>(a.nombre||"").localeCompare(b.nombre||"","es"))
-          .map(c=>`<option value="${c.id}" ${c.id===o.categoriaId?"selected":""}>${c.nombre||"Sin nombre"}</option>`)
-          .join("")}
-      </select>
-
-      <label>Cantidad necesaria</label>
-      <input id="edit-cantidad-${id}" type="number" min="1" step="1" value="${cantidadNecesaria}" placeholder="Cantidad necesaria">
-
-      <label>Precio unitario</label>
-      <input id="edit-precio-unitario-${id}" type="number" min="0" step="0.01" value="${precioUnitario}" placeholder="Precio unitario">
-
-      <label>Precio total calculado</label>
-      <input id="edit-precio-${id}" type="number" value="${precio}" placeholder="Precio total" readonly>
-
-      <label>URL de imagen</label>
-      <input id="edit-imagen-${id}" value="${limpiarTexto(o.imagenUrl)}" placeholder="URL de imagen">
-
-      <label class="check-admin"><input id="edit-urgente-${id}" type="checkbox" ${o.urgente?"checked":""}> Marcar como urgente</label>
-
-      <div class="campo-completo">
-        <p><strong>Recaudado:</strong> ${formatoPesos.format(rec)} — este dato no se edita manualmente.</p>
-        <p><strong>Faltante actual:</strong> ${formatoPesos.format(faltante)}</p>
-      </div>
-
-      <div class="acciones-modal">
-        <button onclick="guardarObjetivo('${id}')">Guardar cambios</button>
-        <button type="button" onclick="cerrarModalAdmin()">Cancelar</button>
-      </div>
-    </div>
-  `);
-
-  const cantidadEdit=document.getElementById("edit-cantidad-"+id);
-  const precioUnitarioEdit=document.getElementById("edit-precio-unitario-"+id);
-  const precioTotalEdit=document.getElementById("edit-precio-"+id);
-  const recalcularTotalEdit=()=>{
-    const cantidad=Math.max(1,Number(cantidadEdit?.value||1));
-    const unitario=Math.max(0,Number(precioUnitarioEdit?.value||0));
-    if(precioTotalEdit) precioTotalEdit.value=(cantidad*unitario).toFixed(2);
-  };
-  cantidadEdit?.addEventListener("input",recalcularTotalEdit);
-  precioUnitarioEdit?.addEventListener("input",recalcularTotalEdit);
-  recalcularTotalEdit();
+  const o=objetivosCache.find(x=>x.id===id);if(!o)return;
+  const cantidad=Math.max(1,numeroSeguro(o.cantidadNecesaria||1));const unitario=numeroSeguro(o.precioUnitario||o.precio||0);const impuestos=Array.isArray(o.impuestos)?o.impuestos:[];const calc=calcularTotales(cantidad,unitario,impuestos);const precio=numeroSeguro(o.precio||calc.precio);const rec=numeroSeguro(o.recaudado);
+  crearModalAdmin("Editar objetivo",`<div class="form-modal-admin">
+    <label>Nombre</label><input id="edit-nombre-${id}" value="${limpiarTexto(o.nombre)}">
+    <label>Descripción</label><input id="edit-descripcion-${id}" value="${limpiarTexto(o.descripcion)}">
+    <label>Categoría</label><select id="edit-categoria-${id}"><option value="">Seleccionar categoría</option>${categoriasCache.map(c=>`<option value="${c.id}" ${c.id===o.categoriaId?"selected":""}>${limpiarTexto(c.nombre)}</option>`).join("")}</select>
+    <label>Cantidad necesaria</label><input id="edit-cantidad-${id}" type="number" min="1" step="1" value="${cantidad}">
+    <label>Precio unitario sin impuestos</label><input id="edit-unitario-${id}" type="number" min="0" step="0.01" value="${unitario}">
+    <div class="campo-completo impuestos-aplicables-caja"><label>Impuestos aplicables</label><div id="edit-impuestos-${id}" class="impuestos-checkbox-grid"></div></div>
+    <label>Subtotal</label><input id="edit-subtotal-${id}" readonly>
+    <label>Total impuestos</label><input id="edit-monto-impuestos-${id}" readonly>
+    <label>Precio total</label><input id="edit-precio-${id}" readonly>
+    <label>URL de imagen</label><input id="edit-imagen-${id}" value="${limpiarTexto(o.imagenUrl)}">
+    <label class="check-admin"><input id="edit-urgente-${id}" type="checkbox" ${o.urgente?"checked":""}> Marcar como urgente</label>
+    <div class="campo-completo"><p><strong>Recaudado:</strong> ${formatoPesos.format(rec)} — no se edita manualmente.</p></div>
+    <div class="acciones-modal"><button onclick="guardarObjetivo('${id}')">Guardar cambios</button><button type="button" onclick="cerrarModalAdmin()">Cancelar</button></div></div>`);
+  renderSelectorImpuestos(`edit-impuestos-${id}`,impuestos);
+  const recalc=()=>{const t=calcularTotales(numeroSeguro(document.getElementById(`edit-cantidad-${id}`).value),numeroSeguro(document.getElementById(`edit-unitario-${id}`).value),seleccionadosDe(`edit-impuestos-${id}`));document.getElementById(`edit-subtotal-${id}`).value=t.subtotal.toFixed(2);document.getElementById(`edit-monto-impuestos-${id}`).value=t.montoImpuestos.toFixed(2);document.getElementById(`edit-precio-${id}`).value=t.precio.toFixed(2);};
+  document.getElementById(`edit-cantidad-${id}`).addEventListener("input",recalc);document.getElementById(`edit-unitario-${id}`).addEventListener("input",recalc);document.getElementById(`edit-impuestos-${id}`).addEventListener("change",recalc);recalc();
 };
 
 window.guardarObjetivo=async id=>{
-  const objetivo=objetivosCache.find(o=>o.id===id);
-  const recaudadoActual=Number(objetivo?.recaudado||0);
-  const cantidadNecesaria=Math.max(1,Number(document.getElementById("edit-cantidad-"+id).value||1));
-  const precioUnitario=Math.max(0,Number(document.getElementById("edit-precio-unitario-"+id).value||0));
-  const precioNuevo=cantidadNecesaria*precioUnitario;
-
-  if(cantidadNecesaria<1){
-    alert("La cantidad necesaria debe ser de al menos 1.");
-    return;
-  }
-
-  if(precioUnitario<=0){
-    alert("El precio unitario debe ser mayor a 0.");
-    return;
-  }
-
-  if(precioNuevo<recaudadoActual){
-    alert("El precio no puede ser menor a lo ya recaudado.");
-    return;
-  }
-
-  await updateDoc(doc(db,"objetivos",id),{
-    nombre:document.getElementById("edit-nombre-"+id).value.trim(),
-    descripcion:document.getElementById("edit-descripcion-"+id).value.trim(),
-    cantidadNecesaria,
-    precioUnitario,
-    precio:precioNuevo,
-    imagenUrl:document.getElementById("edit-imagen-"+id).value.trim(),
-    urgente:document.getElementById("edit-urgente-"+id).checked,
-    actualizado:serverTimestamp()
-  });
-
-  alert("Objetivo actualizado. No se modificó lo recaudado.");
-  cerrarModalAdmin();
+  const o=objetivosCache.find(x=>x.id===id);const cantidad=Math.max(1,numeroSeguro(document.getElementById(`edit-cantidad-${id}`).value));const unitario=numeroSeguro(document.getElementById(`edit-unitario-${id}`).value);const impuestos=seleccionadosDe(`edit-impuestos-${id}`);const t=calcularTotales(cantidad,unitario,impuestos);const rec=numeroSeguro(o?.recaudado);const categoriaId=document.getElementById(`edit-categoria-${id}`).value;const categoria=categoriasCache.find(c=>c.id===categoriaId);
+  if(!categoria)return alert("Seleccioná una categoría.");if(unitario<=0)return alert("El precio unitario debe ser mayor a 0.");if(t.precio<rec)return alert("El total no puede ser menor a lo ya recaudado.");
+  await updateDoc(doc(db,"objetivos",id),{nombre:document.getElementById(`edit-nombre-${id}`).value.trim(),descripcion:document.getElementById(`edit-descripcion-${id}`).value.trim(),categoriaId,categoriaNombre:categoria.nombre||"",cantidadNecesaria:cantidad,precioUnitario:unitario,subtotal:t.subtotal,impuestos,montoImpuestos:t.montoImpuestos,precio:t.precio,imagenUrl:document.getElementById(`edit-imagen-${id}`).value.trim(),urgente:document.getElementById(`edit-urgente-${id}`).checked,actualizado:serverTimestamp()});cerrarModalAdmin();
 };
-
-window.eliminarObjetivo=async id=>{
-  if(confirm("¿Eliminar objetivo?")) await deleteDoc(doc(db,"objetivos",id));
-};
+window.eliminarObjetivo=async id=>{if(confirm("¿Eliminar objetivo?"))await deleteDoc(doc(db,"objetivos",id));};
 
 function donaciones(){
   if(!tienePermiso("objetivos")) return;
