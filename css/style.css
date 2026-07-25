@@ -2371,3 +2371,23 @@ body.fondo-publico-activo .seccion-publica {
   backdrop-filter: none !important;
 }
 
+/*  Cantidad necesaria y precio unitario */
+
+#precio[readonly],
+[id^="edit-precio-"][readonly] {
+  background: #eef3f7 !important;
+  color: #28465f;
+  font-weight: 800;
+  cursor: not-allowed;
+}
+
+#listaObjetivos .card p,
+.lista-objetivos-categoria .card p {
+  margin: 4px 0;
+}
+
+@media (max-width: 800px) {
+  #objetivoForm {
+    grid-template-columns: 1fr !important;
+  }
+}
