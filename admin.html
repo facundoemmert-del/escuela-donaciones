@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Administrador</title>
-<link rel="stylesheet" href="css/style.css?v=55">
+<link rel="stylesheet" href="css/style.css?v=56">
 </head>
 <body>
 
@@ -120,7 +120,8 @@
     <form id="impuestoForm" class="form-admin impuesto-form">
       <input id="impuestoNombre" placeholder="Nombre del impuesto (ej.: IVA)" required>
       <input id="impuestoPorcentaje" type="number" min="0" step="0.01" placeholder="Porcentaje (ej.: 21)" required>
-      <button type="submit">Agregar impuesto</button>
+      <button id="agregarImpuestoBtn" type="button" onclick="crearImpuesto()">Agregar impuesto</button>
+      <p id="estadoImpuesto" class="texto-suave campo-completo" aria-live="polite"></p>
     </form>
 
     <div id="listaImpuestos" class="lista-impuestos-admin"></div>
@@ -236,6 +237,6 @@
 </main>
 </div>
 
-<script type="module" src="js/admin.js?v=55"></script>
+<script type="module" src="js/admin.js?v=56"></script>
 </body>
 </html>
