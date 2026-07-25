@@ -1,0 +1,26 @@
+ZIP 54 - IMPUESTOS POR OBJETIVO
+
+Esta versión parte del ZIP 53 consolidado e incorpora:
+
+- Creación de varios impuestos desde la pestaña Objetivos.
+- Nombre y porcentaje para cada impuesto.
+- Selección de uno, varios o ningún impuesto para cada producto.
+- Cálculo automático:
+  subtotal = cantidad × precio unitario
+  impuestos = subtotal × porcentaje de cada impuesto
+  total = subtotal + suma de impuestos
+- Edición y eliminación de impuestos.
+- No permite borrar un impuesto que esté aplicado a un objetivo.
+- Los objetivos viejos siguen funcionando sin impuestos.
+- La web pública muestra los impuestos aplicados y sus importes.
+- Reglas de Firestore actualizadas para las colecciones categorias e impuestos.
+
+PARA INSTALAR:
+1. Reemplazá todo el contenido de tu repositorio por el contenido de la carpeta escuela-donaciones-main.
+2. En Firebase, copiá y publicá el contenido actualizado de firestore.rules.
+3. Hacé commit en GitHub.
+4. Esperá uno o dos minutos y actualizá con Ctrl + F5.
+
+IMPORTANTE:
+El precio unitario se carga sin impuestos.
+El precio total se calcula automáticamente y no se edita manualmente.

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Administrador</title>
-<link rel="stylesheet" href="css/style.css?v=53">
+<link rel="stylesheet" href="css/style.css?v=54">
 </head>
 <body>
 
@@ -108,6 +108,24 @@
 
 <section id="tab-objetivos" class="tab-panel" data-panel-permiso="objetivos">
   <h2>Objetivos</h2>
+
+  <div class="impuestos-admin-bloque">
+    <div class="impuestos-admin-encabezado">
+      <div>
+        <h3>Impuestos disponibles</h3>
+        <p>Podés crear varios impuestos y elegir cuáles se aplican a cada producto.</p>
+      </div>
+    </div>
+
+    <form id="impuestoForm" class="form-admin impuesto-form">
+      <input id="impuestoNombre" placeholder="Nombre del impuesto (ej.: IVA)" required>
+      <input id="impuestoPorcentaje" type="number" min="0" step="0.01" placeholder="Porcentaje (ej.: 21)" required>
+      <button type="submit">Agregar impuesto</button>
+    </form>
+
+    <div id="listaImpuestos" class="lista-impuestos-admin"></div>
+  </div>
+
   <form id="objetivoForm" class="form-admin">
     <input id="nombre" placeholder="Nombre del objetivo" required>
     <input id="descripcion" placeholder="Descripción">
@@ -115,8 +133,16 @@
       <option value="">Seleccionar categoría</option>
     </select>
     <input id="cantidadNecesaria" type="number" min="1" step="1" value="1" placeholder="Cantidad necesaria" required>
-    <input id="precioUnitario" type="number" min="0" step="0.01" placeholder="Precio unitario" required>
-    <input id="precio" type="number" placeholder="Precio total calculado" readonly>
+    <input id="precioUnitario" type="number" min="0" step="0.01" placeholder="Precio unitario sin impuestos" required>
+    <input id="subtotalObjetivo" type="number" placeholder="Subtotal sin impuestos" readonly>
+    <div class="campo-completo impuestos-aplicables-caja">
+      <label>Impuestos que aplican a este producto</label>
+      <div id="impuestosAplicables" class="impuestos-checkbox-grid">
+        <p class="texto-suave">Todavía no hay impuestos creados.</p>
+      </div>
+    </div>
+    <input id="montoImpuestosObjetivo" type="number" placeholder="Total de impuestos" readonly>
+    <input id="precio" type="number" placeholder="Precio total con impuestos" readonly>
     <input id="imagenUrl" placeholder="URL de imagen">
     <label class="check-admin"><input id="urgente" type="checkbox"> Marcar como urgente</label>
     <button type="submit">Agregar objetivo</button>
@@ -210,6 +236,6 @@
 </main>
 </div>
 
-<script type="module" src="js/admin.js?v=53"></script>
+<script type="module" src="js/admin.js?v=54"></script>
 </body>
 </html>

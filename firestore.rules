@@ -53,6 +53,17 @@ service cloud.firestore {
         );
     }
 
+
+    match /categorias/{id} {
+      allow read: if true;
+      allow write: if hasPermission("objetivos");
+    }
+
+    match /impuestos/{id} {
+      allow read: if true;
+      allow write: if hasPermission("objetivos");
+    }
+
     match /objetivos/{id} {
       allow read: if true;
       allow write: if hasPermission("objetivos");
