@@ -487,71 +487,31 @@ function recalcularObjetivoNuevo(){
 }
 
 function renderImpuestos(){
-  const lista = document.getElementById("listaImpuestos");
+  const lista=document.getElementById("listaImpuestos");
   if(!lista) return;
 
   if(!impuestosCache.length){
-    lista.innerHTML = '<p class="texto-suave">No hay impuestos cargados.</p>';
+    lista.innerHTML='<p class="texto-suave">No hay impuestos cargados.</p>';
   }else{
-    lista.innerHTML = impuestosCache
+    lista.innerHTML=impuestosCache
       .slice()
       .sort((a,b)=>(a.nombre||"").localeCompare(b.nombre||"","es"))
       .map(i=>`
-        <div style="
-          background:#fff;
-          border-radius:16px;
-          padding:18px;
-          margin-bottom:15px;
-          box-shadow:0 8px 20px rgba(0,0,0,.08);
-          border:1px solid #e5edf6;
-        ">
-
-          <div style="
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            margin-bottom:15px;
-          ">
-
-            <strong style="
-              font-size:17px;
-              color:#1b4d7a;
-            ">
-              💰 ${limpiarTexto(i.nombre || "Impuesto")}
-            </strong>
-
-            <span style="
-              background:#eaf4ff;
-              color:#0b5ea8;
-              padding:6px 12px;
-              border-radius:20px;
-              font-weight:bold;
-            ">
-              ${numeroSeguro(i.porcentaje).toFixed(2)} %
-            </span>
-
+        <article style="display:flex;justify-content:space-between;align-items:center;gap:18px;padding:18px 20px;margin:14px 0;background:linear-gradient(135deg,#ffffff 0%,#f4f9ff 100%);border:1px solid #cfe1f5;border-left:6px solid #1769aa;border-radius:14px;box-shadow:0 7px 18px rgba(19,72,120,.12);">
+          <div style="display:flex;align-items:center;gap:14px;min-width:0;">
+            <div style="width:46px;height:46px;display:grid;place-items:center;flex:0 0 46px;border-radius:12px;background:#1769aa;color:#fff;font-size:22px;font-weight:800;">$</div>
+            <div style="min-width:0;">
+              <div style="font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#6b7f92;font-weight:700;">Impuesto</div>
+              <div style="font-size:19px;color:#173b5e;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${limpiarTexto(i.nombre||"Impuesto")}</div>
+            </div>
           </div>
 
-          <div style="
-            display:flex;
-            justify-content:flex-end;
-            gap:10px;
-          ">
-            <button
-              type="button"
-              data-tax-edit="${i.id}">
-              Editar
-            </button>
-
-            <button
-              type="button"
-              class="btn-danger"
-              data-tax-delete="${i.id}">
-              Eliminar
-            </button>
+          <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap;">
+            <span style="display:inline-flex;align-items:center;justify-content:center;min-width:82px;padding:8px 12px;border-radius:999px;background:#dff1ff;color:#075f9d;font-size:16px;font-weight:800;">${numeroSeguro(i.porcentaje).toFixed(2)}%</span>
+            <button type="button" data-tax-edit="${i.id}" style="padding:9px 14px;border:0;border-radius:9px;background:#1769aa;color:#fff;font-weight:700;cursor:pointer;">Editar</button>
+            <button type="button" data-tax-delete="${i.id}" style="padding:9px 14px;border:0;border-radius:9px;background:#c62828;color:#fff;font-weight:700;cursor:pointer;">Eliminar</button>
           </div>
-
-        </div>
+        </article>
       `).join("");
   }
 
