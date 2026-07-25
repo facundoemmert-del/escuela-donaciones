@@ -486,24 +486,66 @@ function recalcularObjetivoNuevo(){
   if(precio) precio.value=t.precio.toFixed(2);
 }
 
-function renderImpuestos(){
-  const lista=document.getElementById("listaImpuestos");
-  if(!lista) return;
-  if(!impuestosCache.length){
-    lista.innerHTML='<p class="texto-suave">No hay impuestos cargados.</p>';
-  }else{
-    lista.innerHTML=impuestosCache.slice().sort((a,b)=>(a.nombre||"").localeCompare(b.nombre||"","es")).map(i=>`
-      <div class="impuesto-item-admin">
-        <div><strong>${limpiarTexto(i.nombre||"Impuesto")}</strong><span>${numeroSeguro(i.porcentaje)}%</span></div>
-        <div class="impuesto-acciones">
-          <button type="button" data-tax-edit="${i.id}">Editar</button>
-          <button type="button" class="btn-danger" data-tax-delete="${i.id}">Eliminar</button>
+lista.innerHTML = impuestosCache
+  .slice()
+  .sort((a,b)=>(a.nombre||"").localeCompare(b.nombre||"","es"))
+  .map(i=>`
+    <div style="
+        background:#fff;
+        border-radius:16px;
+        padding:18px;
+        margin-bottom:15px;
+        box-shadow:0 8px 20px rgba(0,0,0,.08);
+        border:1px solid #e5edf6;
+    ">
+
+        <div style="
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            margin-bottom:15px;
+        ">
+
+            <strong style="
+                font-size:17px;
+                color:#1b4d7a;
+            ">
+                💰 ${limpiarTexto(i.nombre || "Impuesto")}
+            </strong>
+
+            <span style="
+                background:#eaf4ff;
+                color:#0b5ea8;
+                padding:6px 12px;
+                border-radius:20px;
+                font-weight:bold;
+            ">
+                ${numeroSeguro(i.porcentaje).toFixed(2)} %
+            </span>
+
         </div>
-      </div>`).join("");
-  }
-  renderSelectorImpuestos("impuestosAplicables");
-  recalcularObjetivoNuevo();
-}
+
+        <div style="
+            display:flex;
+            justify-content:flex-end;
+            gap:10px;
+        ">
+            <button
+                type="button"
+                data-tax-edit="${i.id}">
+                Editar
+            </button>
+
+            <button
+                type="button"
+                class="btn-danger"
+                data-tax-delete="${i.id}">
+                Eliminar
+            </button>
+        </div>
+
+    </div>
+`).join("");
 
 function impuestos(){
   if(!tienePermiso("objetivos")) return;
