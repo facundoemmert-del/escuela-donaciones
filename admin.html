@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Administrador</title>
-<link rel="stylesheet" href="css/style.css?v=56">
+<link rel="stylesheet" href="css/style.css?v=57">
 </head>
 <body>
 
@@ -120,7 +120,7 @@
     <form id="impuestoForm" class="form-admin impuesto-form">
       <input id="impuestoNombre" placeholder="Nombre del impuesto (ej.: IVA)" required>
       <input id="impuestoPorcentaje" type="number" min="0" step="0.01" placeholder="Porcentaje (ej.: 21)" required>
-      <button id="agregarImpuestoBtn" type="button" onclick="crearImpuesto()">Agregar impuesto</button>
+      <button id="agregarImpuestoBtn" type="button">Agregar impuesto</button>
       <p id="estadoImpuesto" class="texto-suave campo-completo" aria-live="polite"></p>
     </form>
 
@@ -237,6 +237,81 @@
 </main>
 </div>
 
-<script type="module" src="js/admin.js?v=56"></script>
+<script type="module" src="js/admin.js?v=57"></script>
+
+<script type="module">
+  import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { firebaseConfig } from "./js/firebase-config.js?v=57";
+
+  const impuestosApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
+  const impuestosDb = getFirestore(impuestosApp);
+
+  function porcentajeValido(valor) {
+    const numero = Number(valor);
+    return Number.isFinite(numero) ? Math.max(0, numero) : 0;
+  }
+
+  async function guardarImpuestoIndependiente() {
+    const form = document.getElementById("impuestoForm");
+    const nombreInput = document.getElementById("impuestoNombre");
+    const porcentajeInput = document.getElementById("impuestoPorcentaje");
+    const boton = document.getElementById("agregarImpuestoBtn");
+    const estado = document.getElementById("estadoImpuesto");
+
+    const nombre = nombreInput?.value.trim() || "";
+    const porcentaje = porcentajeValido(porcentajeInput?.value);
+
+    if (!nombre) {
+      alert("Ingresá el nombre del impuesto.");
+      nombreInput?.focus();
+      return;
+    }
+
+    if (porcentaje <= 0) {
+      alert("El porcentaje debe ser mayor a 0.");
+      porcentajeInput?.focus();
+      return;
+    }
+
+    try {
+      boton.disabled = true;
+      boton.textContent = "Guardando...";
+      if (estado) estado.textContent = "Guardando impuesto...";
+
+      await addDoc(collection(impuestosDb, "impuestos"), {
+        nombre,
+        porcentaje,
+        creado: serverTimestamp()
+      });
+
+      form?.reset();
+      if (estado) estado.textContent = `Impuesto "${nombre}" agregado correctamente.`;
+      alert("Impuesto agregado correctamente.");
+    } catch (error) {
+      console.error("Error al guardar impuesto:", error);
+      const codigo = error?.code ? ` (${error.code})` : "";
+      if (estado) estado.textContent = `No se pudo guardar${codigo}.`;
+      alert(`No se pudo guardar el impuesto${codigo}.`);
+    } finally {
+      boton.disabled = false;
+      boton.textContent = "Agregar impuesto";
+    }
+  }
+
+  const botonImpuesto = document.getElementById("agregarImpuestoBtn");
+  const formularioImpuesto = document.getElementById("impuestoForm");
+
+  botonImpuesto?.addEventListener("click", guardarImpuestoIndependiente);
+  formularioImpuesto?.addEventListener("submit", (evento) => {
+    evento.preventDefault();
+    evento.stopPropagation();
+    guardarImpuestoIndependiente();
+  });
+
+  // También queda disponible para probarla desde la consola.
+  window.crearImpuesto = guardarImpuestoIndependiente;
+</script>
+
 </body>
 </html>
