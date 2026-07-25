@@ -88,7 +88,10 @@ document.getElementById("copiarCbuBtn").addEventListener("click", () => {
 });
 
 onSnapshot(doc(db, "configuracion", "sitio"), s => {
-  if (!s.exists()) return;
+  if (!s.exists()) {
+    document.body.classList.add("publica-lista");
+    return;
+  }
   const d = s.data();
 
   document.getElementById("nombreEscuelaPublico").textContent = d.nombreEscuela || "Los Naranjos de la Concordia D-114";
@@ -121,6 +124,9 @@ onSnapshot(doc(db, "configuracion", "sitio"), s => {
     document.body.classList.remove("fondo-publico-activo");
     document.body.style.removeProperty("--fondo-publico-url");
   }
+
+  // Habilita el banner cuando Firebase ya terminó de cargar la configuración.
+  document.body.classList.add("publica-lista");
 });
 
 function actualizarMetaGeneral(objs) {
