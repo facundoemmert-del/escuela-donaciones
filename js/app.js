@@ -5,6 +5,9 @@ import { firebaseConfig } from "./firebase-config.js";
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 let objetivoSeleccionado = null;
+let objetivosPublicosCache = [];
+let categoriasPublicasCache = [];
+let categoriaPublicaActiva = null;
 
 const formatoPesos = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 });
 
@@ -105,23 +108,171 @@ onSnapshot(doc(db, "configuracion", "sitio"), s => {
       hero.style.backgroundImage = `url("${d.bannerUrl}")`;
       hero.style.backgroundSize = "cover";
       hero.style.backgroundPosition = "center";
+      hero.style.backgroundRepeat = "no-repeat";
     } else {
       hero.style.backgroundImage = "";
     }
   }
 
-  document.body.classList.add("publica-lista");
+  if (d.publicBackgroundUrl) {
+    document.body.classList.add("fondo-publico-activo");
+    document.body.style.setProperty("--fondo-publico-url", `url("${d.publicBackgroundUrl}")`);
+  } else {
+    document.body.classList.remove("fondo-publico-activo");
+    document.body.style.removeProperty("--fondo-publico-url");
+  }
 });
 
-function renderObjetivos(objs) {
-  const c = document.getElementById("contenedorObjetivos");
-  c.innerHTML = "";
-  let tm = 0, tr = 0;
+function actualizarMetaGeneral(objs) {
+  let totalMeta = 0;
+  let totalRecaudado = 0;
 
   objs.forEach(o => {
     const precio = Number(o.precio || 0);
+    const recaudado = Math.min(Number(o.recaudado || 0), precio);
+    totalMeta += precio;
+    totalRecaudado += recaudado;
+  });
+
+  const porcentaje = calcularPorcentaje(totalRecaudado, totalMeta);
+  const barraGeneral = document.querySelector(".meta-general .progreso");
+  const textoGeneral = document.querySelector(".meta-general p");
+  if (barraGeneral) barraGeneral.style.width = porcentaje + "%";
+  if (textoGeneral) textoGeneral.textContent = `${formatoPesos.format(totalRecaudado)} recaudados de ${formatoPesos.format(totalMeta)} (${porcentaje}%)`;
+}
+
+function objetivosDeCategoria(categoriaId) {
+  if (categoriaId === "sin-categoria") {
+    return objetivosPublicosCache.filter(o => !o.categoriaId);
+  }
+  return objetivosPublicosCache.filter(o => o.categoriaId === categoriaId);
+}
+
+function resumenCategoria(categoriaId) {
+  const objetivos = objetivosDeCategoria(categoriaId);
+  let total = 0;
+  let recaudado = 0;
+
+  objetivos.forEach(o => {
+    const precio = Number(o.precio || 0);
     const rec = Math.min(Number(o.recaudado || 0), precio);
-    tm += precio; tr += rec;
+    total += precio;
+    recaudado += rec;
+  });
+
+  return {
+    cantidad: objetivos.length,
+    total,
+    recaudado,
+    porcentaje: calcularPorcentaje(recaudado, total)
+  };
+}
+
+function renderCategoriasPublicas() {
+  const contenedor = document.getElementById("contenedorObjetivos");
+  if (!contenedor) return;
+
+  categoriaPublicaActiva = null;
+  actualizarMetaGeneral(objetivosPublicosCache);
+
+  const titulo = document.querySelector("#objetivos h2");
+  if (titulo) titulo.textContent = "Categorías de donación";
+
+  const categorias = categoriasPublicasCache.slice().sort((a, b) =>
+    String(a.nombre || "").localeCompare(String(b.nombre || ""), "es")
+  );
+
+  const haySinCategoria = objetivosPublicosCache.some(o => !o.categoriaId);
+  if (haySinCategoria) {
+    categorias.push({
+      id: "sin-categoria",
+      nombre: "Otros objetivos",
+      descripcion: "Objetivos que todavía no fueron asignados a una categoría."
+    });
+  }
+
+  contenedor.innerHTML = "";
+
+  if (!categorias.length) {
+    contenedor.innerHTML = '<div class="categorias-vacio-publico"><h3>Todavía no hay categorías disponibles</h3><p>Próximamente se publicarán nuevos objetivos para colaborar.</p></div>';
+    return;
+  }
+
+  categorias.forEach(categoria => {
+    const resumen = resumenCategoria(categoria.id);
+    if (resumen.cantidad === 0) return;
+
+    const faltante = Math.max(0, resumen.total - resumen.recaudado);
+    const tarjeta = document.createElement("article");
+    tarjeta.className = "categoria-publica-card";
+    tarjeta.tabIndex = 0;
+    tarjeta.setAttribute("role", "button");
+    tarjeta.setAttribute("aria-label", `Ver objetivos de ${categoria.nombre || "categoría"}`);
+    tarjeta.innerHTML = `
+      <div class="categoria-publica-contenido">
+        <h3>${categoria.nombre || "Categoría sin nombre"}</h3>
+        <p class="categoria-publica-descripcion">${categoria.descripcion || "Objetivos de esta categoría."}</p>
+        <div class="categoria-publica-datos">
+          <span><strong>${resumen.cantidad}</strong> objetivo${resumen.cantidad === 1 ? "" : "s"}</span>
+          <span><strong>${formatoPesos.format(resumen.total)}</strong> necesarios</span>
+        </div>
+        <div class="barra categoria-publica-barra"><div class="progreso" style="width:${resumen.porcentaje}%"></div></div>
+        <div class="categoria-publica-progreso">
+          <strong>${resumen.porcentaje}% financiado</strong>
+          <span>${faltante > 0 ? `Faltan ${formatoPesos.format(faltante)}` : "Categoría completada"}</span>
+        </div>
+      </div>
+      <button type="button" class="btn-ver-objetivos">Ver objetivos</button>
+    `;
+
+    const abrir = () => renderObjetivosCategoria(categoria);
+    tarjeta.querySelector(".btn-ver-objetivos").addEventListener("click", e => {
+      e.stopPropagation();
+      abrir();
+    });
+    tarjeta.addEventListener("click", abrir);
+    tarjeta.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        abrir();
+      }
+    });
+    contenedor.appendChild(tarjeta);
+  });
+
+  if (!contenedor.children.length) {
+    contenedor.innerHTML = '<div class="categorias-vacio-publico"><h3>No hay objetivos publicados</h3><p>Las categorías aparecerán cuando tengan al menos un objetivo asociado.</p></div>';
+  }
+}
+
+function renderObjetivosCategoria(categoria) {
+  categoriaPublicaActiva = categoria.id;
+  const contenedor = document.getElementById("contenedorObjetivos");
+  if (!contenedor) return;
+
+  const titulo = document.querySelector("#objetivos h2");
+  if (titulo) titulo.textContent = categoria.nombre || "Objetivos";
+
+  const objetivos = objetivosDeCategoria(categoria.id);
+  contenedor.innerHTML = `
+    <div class="categoria-publica-cabecera">
+      <button type="button" class="btn-volver-categorias">← Volver a categorías</button>
+      ${categoria.descripcion ? `<p>${categoria.descripcion}</p>` : ""}
+    </div>
+    <div id="listaObjetivosCategoria" class="lista-objetivos-categoria"></div>
+  `;
+
+  contenedor.querySelector(".btn-volver-categorias").addEventListener("click", renderCategoriasPublicas);
+  const lista = contenedor.querySelector("#listaObjetivosCategoria");
+
+  if (!objetivos.length) {
+    lista.innerHTML = "<p>No hay objetivos disponibles en esta categoría.</p>";
+    return;
+  }
+
+  objetivos.forEach(o => {
+    const precio = Number(o.precio || 0);
+    const rec = Math.min(Number(o.recaudado || 0), precio);
     const pct = calcularPorcentaje(rec, precio);
     const falt = Math.max(0, precio - rec);
     const comp = pct >= 100;
@@ -139,12 +290,21 @@ function renderObjetivos(objs) {
     `;
     const btn = card.querySelector(".btn-donar-publico");
     if (!comp) btn.addEventListener("click", () => abrirModal({ id: o.id, nombre: o.nombre || "Objetivo", faltante: falt }));
-    c.appendChild(card);
+    lista.appendChild(card);
   });
 
-  const p = calcularPorcentaje(tr, tm);
-  document.querySelector(".meta-general .progreso").style.width = p + "%";
-  document.querySelector(".meta-general p").textContent = `${formatoPesos.format(tr)} recaudados de ${formatoPesos.format(tm)} (${p}%)`;
+  document.getElementById("objetivos")?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function actualizarVistaObjetivosPublicos() {
+  if (categoriaPublicaActiva) {
+    const categoria = categoriasPublicasCache.find(c => c.id === categoriaPublicaActiva) ||
+      (categoriaPublicaActiva === "sin-categoria" ? { id: "sin-categoria", nombre: "Otros objetivos", descripcion: "Objetivos que todavía no fueron asignados a una categoría." } : null);
+    if (categoria) renderObjetivosCategoria(categoria);
+    else renderCategoriasPublicas();
+  } else {
+    renderCategoriasPublicas();
+  }
 }
 
 function abrirModal(o) {
@@ -223,9 +383,15 @@ function renderDonacionesPublicas(donaciones) {
 }
 
 onSnapshot(query(collection(db, "objetivos")), snap => {
-  const a = [];
-  snap.forEach(d => a.push({ id: d.id, ...d.data() }));
-  renderObjetivos(a);
+  objetivosPublicosCache = [];
+  snap.forEach(d => objetivosPublicosCache.push({ id: d.id, ...d.data() }));
+  actualizarVistaObjetivosPublicos();
+});
+
+onSnapshot(query(collection(db, "categorias")), snap => {
+  categoriasPublicasCache = [];
+  snap.forEach(d => categoriasPublicasCache.push({ id: d.id, ...d.data() }));
+  actualizarVistaObjetivosPublicos();
 });
 
 onSnapshot(query(collection(db, "donaciones")), snap => {
