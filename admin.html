@@ -114,8 +114,9 @@
     <select id="categoriaObjetivo" required>
       <option value="">Seleccionar categoría</option>
     </select>
-    <input id="precio" type="number" placeholder="Precio total" required>
-    <input id="recaudado" type="number" placeholder="Recaudado" value="0">
+    <input id="cantidadNecesaria" type="number" min="1" step="1" value="1" placeholder="Cantidad necesaria" required>
+    <input id="precioUnitario" type="number" min="0" step="0.01" placeholder="Precio unitario" required>
+    <input id="precio" type="number" placeholder="Precio total calculado" readonly>
     <input id="imagenUrl" placeholder="URL de imagen">
     <label class="check-admin"><input id="urgente" type="checkbox"> Marcar como urgente</label>
     <button type="submit">Agregar objetivo</button>
