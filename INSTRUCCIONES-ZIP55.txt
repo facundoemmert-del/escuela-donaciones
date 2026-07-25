@@ -1,0 +1,15 @@
+ZIP 55 - CORRECCIÓN CREACIÓN DE IMPUESTOS
+
+Correcciones:
+- El formulario de impuestos ya no recarga la página.
+- Se muestra “Guardando...” mientras se crea el impuesto.
+- Se muestra un mensaje cuando el impuesto se guarda correctamente.
+- Se informa si faltan permisos o no se publicaron las reglas de Firestore.
+- Se eliminó una llamada interna incorrecta que podía interrumpir el funcionamiento.
+
+INSTALACIÓN:
+1. Reemplazá todo el contenido del repositorio por el contenido de escuela-donaciones-main.
+2. No hace falta volver a modificar las reglas si ya publicaste las del ZIP 54.
+3. Hacé commit.
+4. Esperá uno o dos minutos.
+5. Actualizá la página con Ctrl + F5.
