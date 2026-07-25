@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Administrador</title>
-<link rel="stylesheet" href="css/style.css?v=57">
+<link rel="stylesheet" href="css/style.css?v=58">
 </head>
 <body>
 
@@ -237,12 +237,12 @@
 </main>
 </div>
 
-<script type="module" src="js/admin.js?v=57"></script>
+<script type="module" src="js/admin.js?v=58"></script>
 
 <script type="module">
   import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-  import { firebaseConfig } from "./js/firebase-config.js?v=57";
+  import { getFirestore, collection, addDoc, serverTimestamp, query, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { firebaseConfig } from "./js/firebase-config.js?v=58";
 
   const impuestosApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
   const impuestosDb = getFirestore(impuestosApp);
@@ -286,7 +286,7 @@
       });
 
       form?.reset();
-      if (estado) estado.textContent = `Impuesto "${nombre}" agregado correctamente.`;
+      if (estado) estado.textContent = `Impuesto "${nombre}" agregado correctamente. Ya está disponible abajo.`;
       alert("Impuesto agregado correctamente.");
     } catch (error) {
       console.error("Error al guardar impuesto:", error);
@@ -298,6 +298,84 @@
       boton.textContent = "Agregar impuesto";
     }
   }
+
+
+  function textoSeguro(valor) {
+    return String(valor ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function renderizarImpuestosSincronizados(impuestos) {
+    window.impuestosCompartidos = impuestos;
+
+    const lista = document.getElementById("listaImpuestos");
+    if (lista) {
+      if (!impuestos.length) {
+        lista.innerHTML = '<p class="texto-suave">No hay impuestos cargados.</p>';
+      } else {
+        lista.innerHTML = impuestos
+          .slice()
+          .sort((a, b) => String(a.nombre || "").localeCompare(String(b.nombre || ""), "es"))
+          .map(impuesto => `
+            <div class="impuesto-item-admin">
+              <div>
+                <strong>${textoSeguro(impuesto.nombre || "Impuesto")}</strong>
+                <span>${porcentajeValido(impuesto.porcentaje)}%</span>
+              </div>
+              <div class="impuesto-acciones">
+                <button type="button" onclick="abrirEditorImpuesto('${impuesto.id}')">Editar</button>
+                <button type="button" class="btn-danger" onclick="eliminarImpuesto('${impuesto.id}')">Eliminar</button>
+              </div>
+            </div>
+          `).join("");
+      }
+    }
+
+    const selector = document.getElementById("impuestosAplicables");
+    if (selector) {
+      const seleccionados = new Set(
+        [...selector.querySelectorAll('input[data-impuesto-id]:checked')]
+          .map(input => input.dataset.impuestoId)
+      );
+
+      if (!impuestos.length) {
+        selector.innerHTML = '<p class="texto-suave">Todavía no hay impuestos creados. El producto se calculará sin impuestos.</p>';
+      } else {
+        selector.innerHTML = impuestos
+          .slice()
+          .sort((a, b) => String(a.nombre || "").localeCompare(String(b.nombre || ""), "es"))
+          .map(impuesto => `
+            <label class="impuesto-check">
+              <input type="checkbox" data-impuesto-id="${impuesto.id}" ${seleccionados.has(impuesto.id) ? "checked" : ""}>
+              <span>
+                <strong>${textoSeguro(impuesto.nombre || "Impuesto")}</strong>
+                <small>${porcentajeValido(impuesto.porcentaje)}%</small>
+              </span>
+            </label>
+          `).join("");
+      }
+
+      selector.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  }
+
+  onSnapshot(
+    query(collection(impuestosDb, "impuestos")),
+    snapshot => {
+      const impuestos = [];
+      snapshot.forEach(documento => impuestos.push({ id: documento.id, ...documento.data() }));
+      renderizarImpuestosSincronizados(impuestos);
+    },
+    error => {
+      console.error("Error al sincronizar impuestos:", error);
+      const estado = document.getElementById("estadoImpuesto");
+      if (estado) estado.textContent = `No se pudieron cargar los impuestos (${error.code || "error"}).`;
+    }
+  );
 
   const botonImpuesto = document.getElementById("agregarImpuestoBtn");
   const formularioImpuesto = document.getElementById("impuestoForm");
