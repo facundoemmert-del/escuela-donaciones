@@ -2350,3 +2350,24 @@ body.publica-lista .hero {
   }
 }
 
+
+/* mostrar mejor la imagen de fondo pública */
+
+body.fondo-publico-activo {
+  background-image:
+    linear-gradient(180deg, rgba(246,248,251,.20), rgba(238,243,247,.28)),
+    var(--fondo-publico-url) !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+}
+
+/* Las cajas siguen blancas para poder leer, pero sin tapar todo el fondo */
+body.fondo-publico-activo .meta-general,
+body.fondo-publico-activo .objetivos,
+body.fondo-publico-activo .seccion-publica {
+  background: rgba(255,255,255,.82) !important;
+  backdrop-filter: none !important;
+}
+
