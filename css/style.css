@@ -2206,3 +2206,147 @@ body.publica-lista .hero {
     flex-direction: column;
   }
 }
+
+
+/*  Objetivos públicos organizados por categorías */
+#contenedorObjetivos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: 20px;
+  align-items: stretch;
+}
+
+.categoria-publica-card {
+  background: #ffffff;
+  border: 1px solid #dbe5ed;
+  border-radius: 18px;
+  padding: 22px;
+  min-height: 290px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 10px 28px rgba(23, 55, 78, 0.09);
+  cursor: pointer;
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+
+.categoria-publica-card:hover,
+.categoria-publica-card:focus-visible {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 36px rgba(23, 55, 78, 0.15);
+  border-color: #1e6596;
+  outline: none;
+}
+
+.categoria-publica-card h3 {
+  margin: 0 0 10px;
+  font-size: 1.35rem;
+  color: #123f5f;
+}
+
+.categoria-publica-descripcion {
+  margin: 0 0 18px;
+  color: #536775;
+  line-height: 1.5;
+  min-height: 46px;
+}
+
+.categoria-publica-datos {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 14px;
+  color: #334b5a;
+}
+
+.categoria-publica-barra {
+  margin: 8px 0 10px;
+}
+
+.categoria-publica-progreso {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: .92rem;
+  color: #456071;
+}
+
+.btn-ver-objetivos,
+.btn-volver-categorias {
+  border: 0;
+  border-radius: 10px;
+  background: #176092;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 12px 18px;
+  transition: background .2s ease, transform .2s ease;
+}
+
+.btn-ver-objetivos {
+  width: 100%;
+  margin-top: 20px;
+}
+
+.btn-ver-objetivos:hover,
+.btn-volver-categorias:hover {
+  background: #0f4d77;
+}
+
+.btn-ver-objetivos:active,
+.btn-volver-categorias:active {
+  transform: scale(.98);
+}
+
+.categoria-publica-cabecera {
+  grid-column: 1 / -1;
+  background: #fff;
+  border: 1px solid #dbe5ed;
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow: 0 6px 18px rgba(23, 55, 78, .07);
+}
+
+.categoria-publica-cabecera p {
+  margin: 13px 0 0;
+  color: #526775;
+}
+
+.lista-objetivos-categoria {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 18px;
+  align-items: stretch;
+}
+
+.categorias-vacio-publico {
+  grid-column: 1 / -1;
+  text-align: center;
+  background: #fff;
+  border: 1px solid #dbe5ed;
+  border-radius: 14px;
+  padding: 35px 20px;
+}
+
+@media (max-width: 650px) {
+  #contenedorObjetivos,
+  .lista-objetivos-categoria {
+    grid-template-columns: 1fr;
+  }
+
+  .categoria-publica-card {
+    min-height: 0;
+    padding: 18px;
+  }
+
+  .categoria-publica-progreso {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .btn-volver-categorias {
+    width: 100%;
+  }
+}
+
