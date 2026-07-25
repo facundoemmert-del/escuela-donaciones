@@ -272,6 +272,8 @@ function renderObjetivosCategoria(categoria) {
 
   objetivos.forEach(o => {
     const precio = Number(o.precio || 0);
+    const cantidadNecesaria = Math.max(1, Number(o.cantidadNecesaria || 1));
+    const precioUnitario = Number(o.precioUnitario || precio);
     const rec = Math.min(Number(o.recaudado || 0), precio);
     const pct = calcularPorcentaje(rec, precio);
     const falt = Math.max(0, precio - rec);
@@ -284,6 +286,9 @@ function renderObjetivosCategoria(categoria) {
       <div class="card-header"><div><h3>${o.nombre || "Objetivo sin nombre"}</h3><p>${o.descripcion || ""}</p></div>${o.urgente ? "<span class='etiqueta'>Urgente</span>" : ""}</div>
       <div class="barra"><div class="progreso" style="width:${pct}%"></div></div>
       <p><strong>${pct}% completado</strong></p>
+      <p><strong>Cantidad necesaria:</strong> ${cantidadNecesaria}</p>
+      <p><strong>Precio unitario:</strong> ${formatoPesos.format(precioUnitario)}</p>
+      <p><strong>Total necesario:</strong> ${formatoPesos.format(precio)}</p>
       <p>Recaudado: ${formatoPesos.format(rec)} de ${formatoPesos.format(precio)}</p>
       <p>${comp ? "✅ Objetivo completado" : "Faltan: " + formatoPesos.format(falt)}</p>
       <button class="btn-donar-publico" ${comp ? "disabled" : ""}>${comp ? "Donaciones cerradas" : "Donar para este objetivo"}</button>

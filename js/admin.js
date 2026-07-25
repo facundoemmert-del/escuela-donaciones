@@ -439,10 +439,25 @@ function objetivos(){
   const bus=document.getElementById("buscadorObjetivos");
   if(!f) return;
 
+  const cantidadInput=document.getElementById("cantidadNecesaria");
+  const precioUnitarioInput=document.getElementById("precioUnitario");
+  const precioTotalInput=document.getElementById("precio");
+
+  const recalcularPrecioTotal=()=>{
+    const cantidad=Math.max(1,Number(cantidadInput?.value||1));
+    const precioUnitario=Math.max(0,Number(precioUnitarioInput?.value||0));
+    if(precioTotalInput) precioTotalInput.value=(cantidad*precioUnitario).toFixed(2);
+  };
+
+  cantidadInput?.addEventListener("input",recalcularPrecioTotal);
+  precioUnitarioInput?.addEventListener("input",recalcularPrecioTotal);
+  recalcularPrecioTotal();
+
   f.onsubmit=async e=>{
     e.preventDefault();
-    const precio=Number(document.getElementById("precio").value);
-    const rec=Number(document.getElementById("recaudado").value||0);
+    const cantidadNecesaria=Math.max(1,Number(document.getElementById("cantidadNecesaria").value||1));
+    const precioUnitario=Math.max(0,Number(document.getElementById("precioUnitario").value||0));
+    const precio=cantidadNecesaria*precioUnitario;
     const categoriaId=document.getElementById("categoriaObjetivo")?.value || "";
     const categoria=categoriasCache.find(c=>c.id===categoriaId);
 
@@ -451,20 +466,33 @@ function objetivos(){
       return;
     }
 
+    if(cantidadNecesaria<1){
+      alert("La cantidad necesaria debe ser de al menos 1.");
+      return;
+    }
+
+    if(precioUnitario<=0){
+      alert("El precio unitario debe ser mayor a 0.");
+      return;
+    }
+
     await addDoc(collection(db,"objetivos"),{
       nombre:document.getElementById("nombre").value.trim(),
       descripcion:document.getElementById("descripcion").value.trim(),
       categoriaId,
       categoriaNombre:categoria.nombre||"",
+      cantidadNecesaria,
+      precioUnitario,
       precio,
-      recaudado:Math.min(rec,precio),
+      recaudado:0,
       imagenUrl:document.getElementById("imagenUrl").value.trim(),
       urgente:document.getElementById("urgente").checked,
       creado:serverTimestamp()
     });
 
     f.reset();
-    document.getElementById("recaudado").value=0;
+    document.getElementById("cantidadNecesaria").value=1;
+    recalcularPrecioTotal();
   };
 
   onSnapshot(query(collection(db,"objetivos")),s=>{
@@ -545,6 +573,8 @@ function renderObjetivos(){
     .filter(o=>`${o.nombre||""} ${o.descripcion||""} ${o.categoriaNombre||""}`.toLowerCase().includes(q))
     .forEach(o=>{
       const precio=Number(o.precio||0);
+      const cantidadNecesaria=Math.max(1,Number(o.cantidadNecesaria||1));
+      const precioUnitario=Number(o.precioUnitario||precio);
       const rec=Math.min(Number(o.recaudado||0),precio);
       const faltante=Math.max(0,precio-rec);
       const completado=precio>0&&rec>=precio;
@@ -558,7 +588,9 @@ function renderObjetivos(){
         <h3>${o.nombre||"Sin nombre"}</h3>
         <p>${o.descripcion||"Sin descripción"}</p>
         <div class="barra"><div class="progreso" style="width:${porcentaje}%"></div></div>
-        <p><strong>Precio:</strong> ${formatoPesos.format(precio)}</p>
+        <p><strong>Cantidad necesaria:</strong> ${cantidadNecesaria}</p>
+        <p><strong>Precio unitario:</strong> ${formatoPesos.format(precioUnitario)}</p>
+        <p><strong>Precio total:</strong> ${formatoPesos.format(precio)}</p>
         <p><strong>Recaudado:</strong> ${formatoPesos.format(rec)}</p>
         <p><strong>Faltante:</strong> ${formatoPesos.format(faltante)}</p>
         <p>${completado?"✅ Objetivo completado":"Objetivo abierto"}</p>
@@ -575,6 +607,8 @@ window.abrirEditorObjetivo=id=>{
   if(!o) return alert("No se encontró el objetivo.");
 
   const precio=Number(o.precio||0);
+  const cantidadNecesaria=Math.max(1,Number(o.cantidadNecesaria||1));
+  const precioUnitario=Number(o.precioUnitario||precio);
   const rec=Math.min(Number(o.recaudado||0),precio);
   const faltante=Math.max(0,precio-rec);
 
@@ -596,8 +630,14 @@ window.abrirEditorObjetivo=id=>{
           .join("")}
       </select>
 
-      <label>Precio actualizado</label>
-      <input id="edit-precio-${id}" type="number" value="${precio}" placeholder="Precio">
+      <label>Cantidad necesaria</label>
+      <input id="edit-cantidad-${id}" type="number" min="1" step="1" value="${cantidadNecesaria}" placeholder="Cantidad necesaria">
+
+      <label>Precio unitario</label>
+      <input id="edit-precio-unitario-${id}" type="number" min="0" step="0.01" value="${precioUnitario}" placeholder="Precio unitario">
+
+      <label>Precio total calculado</label>
+      <input id="edit-precio-${id}" type="number" value="${precio}" placeholder="Precio total" readonly>
 
       <label>URL de imagen</label>
       <input id="edit-imagen-${id}" value="${limpiarTexto(o.imagenUrl)}" placeholder="URL de imagen">
@@ -615,15 +655,34 @@ window.abrirEditorObjetivo=id=>{
       </div>
     </div>
   `);
+
+  const cantidadEdit=document.getElementById("edit-cantidad-"+id);
+  const precioUnitarioEdit=document.getElementById("edit-precio-unitario-"+id);
+  const precioTotalEdit=document.getElementById("edit-precio-"+id);
+  const recalcularTotalEdit=()=>{
+    const cantidad=Math.max(1,Number(cantidadEdit?.value||1));
+    const unitario=Math.max(0,Number(precioUnitarioEdit?.value||0));
+    if(precioTotalEdit) precioTotalEdit.value=(cantidad*unitario).toFixed(2);
+  };
+  cantidadEdit?.addEventListener("input",recalcularTotalEdit);
+  precioUnitarioEdit?.addEventListener("input",recalcularTotalEdit);
+  recalcularTotalEdit();
 };
 
 window.guardarObjetivo=async id=>{
   const objetivo=objetivosCache.find(o=>o.id===id);
   const recaudadoActual=Number(objetivo?.recaudado||0);
-  const precioNuevo=Number(document.getElementById("edit-precio-"+id).value);
+  const cantidadNecesaria=Math.max(1,Number(document.getElementById("edit-cantidad-"+id).value||1));
+  const precioUnitario=Math.max(0,Number(document.getElementById("edit-precio-unitario-"+id).value||0));
+  const precioNuevo=cantidadNecesaria*precioUnitario;
 
-  if(!precioNuevo||precioNuevo<=0){
-    alert("El precio debe ser mayor a 0.");
+  if(cantidadNecesaria<1){
+    alert("La cantidad necesaria debe ser de al menos 1.");
+    return;
+  }
+
+  if(precioUnitario<=0){
+    alert("El precio unitario debe ser mayor a 0.");
     return;
   }
 
@@ -635,6 +694,8 @@ window.guardarObjetivo=async id=>{
   await updateDoc(doc(db,"objetivos",id),{
     nombre:document.getElementById("edit-nombre-"+id).value.trim(),
     descripcion:document.getElementById("edit-descripcion-"+id).value.trim(),
+    cantidadNecesaria,
+    precioUnitario,
     precio:precioNuevo,
     imagenUrl:document.getElementById("edit-imagen-"+id).value.trim(),
     urgente:document.getElementById("edit-urgente-"+id).checked,
