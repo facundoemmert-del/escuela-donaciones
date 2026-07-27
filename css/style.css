@@ -2438,3 +2438,22 @@ body.fondo-publico-activo .public-panel.activo {
     min-height: calc(100vh - 430px);
   }
 }
+
+/* CORRECCIÓN - Scroll de ventanas modales en computadora
+   Permite recorrer formularios altos sin modificar el funcionamiento en celular. */
+@media (min-width: 601px) {
+  .modal {
+    overflow-y: auto !important;
+    align-items: flex-start !important;
+    padding-top: 24px !important;
+    padding-bottom: 24px !important;
+  }
+
+  .modal-card {
+    max-height: calc(100vh - 48px) !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+}
+
