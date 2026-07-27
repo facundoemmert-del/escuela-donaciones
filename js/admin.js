@@ -17,6 +17,9 @@ let impuestosCache=[];
 let adminsCreados={};
 let adminsAutorizados={};
 let donacionesAprobadasCache=[];
+let categoriaAdminActiva=null;
+let paginaObjetivosAdmin=1;
+const OBJETIVOS_POR_PAGINA=6;
 
 const formatoPesos=new Intl.NumberFormat("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0});
 
@@ -590,7 +593,7 @@ function objetivos(){
     f.reset();document.getElementById("cantidadNecesaria").value=1;renderSelectorImpuestos("impuestosAplicables");recalcularObjetivoNuevo();
   };
   onSnapshot(query(collection(db,"objetivos")),s=>{objetivosCache=[];s.forEach(d=>objetivosCache.push({id:d.id,...d.data()}));renderObjetivos();});
-  if(bus)bus.oninput=renderObjetivos;
+  if(bus)bus.oninput=()=>{paginaObjetivosAdmin=1;renderObjetivos();};
 }
 
 function obtenerYoutubeId(url){
@@ -650,26 +653,194 @@ function crearModalAdmin(titulo, contenidoHtml){
 
 window.cerrarModalAdmin=cerrarModalAdmin;
 
+function objetivosDeCategoriaAdmin(categoriaId){
+  if(categoriaId==="sin-categoria") return objetivosCache.filter(o=>!o.categoriaId);
+  return objetivosCache.filter(o=>o.categoriaId===categoriaId);
+}
+
+function resumenCategoriaAdmin(categoriaId){
+  const objetivos=objetivosDeCategoriaAdmin(categoriaId);
+  let total=0,recaudado=0;
+  objetivos.forEach(o=>{
+    const precio=numeroSeguro(o.precio||0);
+    total+=precio;
+    recaudado+=Math.min(numeroSeguro(o.recaudado||0),precio);
+  });
+  return {
+    cantidad:objetivos.length,
+    total,
+    recaudado,
+    porcentaje:total?Math.min(100,Math.round(recaudado/total*100)):0
+  };
+}
+
+function renderPaginadorAdmin(contenedor,totalPaginas){
+  if(totalPaginas<=1) return;
+  const pag=document.createElement("nav");
+  pag.className="paginador-objetivos";
+  pag.setAttribute("aria-label","Páginas de productos");
+  pag.innerHTML=`
+    <button type="button" ${paginaObjetivosAdmin===1?"disabled":""} data-pagina="${paginaObjetivosAdmin-1}">← Anterior</button>
+    <div class="paginador-numeros">
+      ${Array.from({length:totalPaginas},(_,i)=>i+1).map(n=>`<button type="button" class="${n===paginaObjetivosAdmin?"activo":""}" data-pagina="${n}" aria-label="Página ${n}">${n}</button>`).join("")}
+    </div>
+    <button type="button" ${paginaObjetivosAdmin===totalPaginas?"disabled":""} data-pagina="${paginaObjetivosAdmin+1}">Siguiente →</button>
+  `;
+  pag.addEventListener("click",e=>{
+    const btn=e.target.closest("[data-pagina]");
+    if(!btn||btn.disabled) return;
+    paginaObjetivosAdmin=Math.max(1,Math.min(totalPaginas,Number(btn.dataset.pagina)||1));
+    renderObjetivos();
+    document.getElementById("tab-objetivos")?.scrollIntoView({behavior:"smooth",block:"start"});
+  });
+  contenedor.appendChild(pag);
+}
+
+function renderCategoriasObjetivosAdmin(l,q){
+  const categorias=categoriasCache.slice().sort((a,b)=>(a.nombre||"").localeCompare(b.nombre||"","es"));
+  if(objetivosCache.some(o=>!o.categoriaId)){
+    categorias.push({id:"sin-categoria",nombre:"Otros objetivos",descripcion:"Productos que todavía no tienen una categoría asignada."});
+  }
+
+  const visibles=categorias.filter(c=>{
+    const resumen=resumenCategoriaAdmin(c.id);
+    const textoCategoria=`${c.nombre||""} ${c.descripcion||""}`.toLowerCase();
+    const coincideProducto=objetivosDeCategoriaAdmin(c.id).some(o=>`${o.nombre||""} ${o.descripcion||""}`.toLowerCase().includes(q));
+    return resumen.cantidad>0 && (!q||textoCategoria.includes(q)||coincideProducto);
+  });
+
+  if(!visibles.length){
+    l.innerHTML='<div class="categoria-vacia">No hay categorías o productos que coincidan con la búsqueda.</div>';
+    return;
+  }
+
+  const grilla=document.createElement("div");
+  grilla.className="categorias-objetivos-admin-grid";
+
+  visibles.forEach(c=>{
+    const r=resumenCategoriaAdmin(c.id);
+    const faltante=Math.max(0,r.total-r.recaudado);
+    const card=document.createElement("article");
+    card.className="categoria-objetivos-admin-card";
+    card.tabIndex=0;
+    card.setAttribute("role","button");
+    card.setAttribute("aria-label",`Abrir categoría ${c.nombre||"sin nombre"}`);
+    card.innerHTML=`
+      <div class="categoria-admin-icono">📁</div>
+      <div class="categoria-admin-contenido">
+        <h3>${limpiarTexto(c.nombre||"Sin categoría")}</h3>
+        <p>${limpiarTexto(c.descripcion||"Productos de esta categoría.")}</p>
+        <div class="categoria-admin-estadisticas">
+          <span><strong>${r.cantidad}</strong> producto${r.cantidad===1?"":"s"}</span>
+          <span><strong>${formatoPesos.format(r.total)}</strong> necesarios</span>
+        </div>
+        <div class="barra"><div class="progreso" style="width:${r.porcentaje}%"></div></div>
+        <div class="categoria-admin-progreso"><strong>${r.porcentaje}% financiado</strong><span>${faltante?`Faltan ${formatoPesos.format(faltante)}`:"Categoría completada"}</span></div>
+      </div>
+      <button type="button" class="btn-abrir-categoria-admin">Abrir categoría</button>
+    `;
+    const abrir=()=>{
+      categoriaAdminActiva=c.id;
+      paginaObjetivosAdmin=1;
+      const bus=document.getElementById("buscadorObjetivos");
+      if(bus) bus.value="";
+      renderObjetivos();
+    };
+    card.addEventListener("click",abrir);
+    card.addEventListener("keydown",e=>{
+      if(e.key==="Enter"||e.key===" "){e.preventDefault();abrir();}
+    });
+    card.querySelector(".btn-abrir-categoria-admin").addEventListener("click",e=>{e.stopPropagation();abrir();});
+    grilla.appendChild(card);
+  });
+  l.appendChild(grilla);
+}
+
 function renderObjetivos(){
-  const l=document.getElementById("listaObjetivos");const bus=document.getElementById("buscadorObjetivos");if(!l)return;
-  const q=(bus?.value||"").toLowerCase();l.innerHTML="";
-  objetivosCache.filter(o=>`${o.nombre||""} ${o.descripcion||""} ${o.categoriaNombre||""}`.toLowerCase().includes(q)).forEach(o=>{
+  const l=document.getElementById("listaObjetivos");
+  const bus=document.getElementById("buscadorObjetivos");
+  if(!l)return;
+  const q=(bus?.value||"").trim().toLowerCase();
+  l.innerHTML="";
+
+  if(!categoriaAdminActiva){
+    renderCategoriasObjetivosAdmin(l,q);
+    return;
+  }
+
+  const categoria=categoriasCache.find(c=>c.id===categoriaAdminActiva)||
+    (categoriaAdminActiva==="sin-categoria"?{id:"sin-categoria",nombre:"Otros objetivos",descripcion:"Productos que todavía no tienen una categoría asignada."}:null);
+  if(!categoria){
+    categoriaAdminActiva=null;
+    renderCategoriasObjetivosAdmin(l,q);
+    return;
+  }
+
+  const cabecera=document.createElement("div");
+  cabecera.className="categoria-admin-cabecera";
+  cabecera.innerHTML=`
+    <button type="button" class="btn-volver-categorias-admin">← Volver a categorías</button>
+    <div>
+      <h3>${limpiarTexto(categoria.nombre||"Categoría")}</h3>
+      <p>${limpiarTexto(categoria.descripcion||"")}</p>
+    </div>
+  `;
+  cabecera.querySelector(".btn-volver-categorias-admin").addEventListener("click",()=>{
+    categoriaAdminActiva=null;
+    paginaObjetivosAdmin=1;
+    if(bus) bus.value="";
+    renderObjetivos();
+  });
+  l.appendChild(cabecera);
+
+  const filtrados=objetivosDeCategoriaAdmin(categoria.id)
+    .filter(o=>`${o.nombre||""} ${o.descripcion||""}`.toLowerCase().includes(q))
+    .sort((a,b)=>(a.nombre||"").localeCompare(b.nombre||"","es"));
+
+  if(!filtrados.length){
+    l.insertAdjacentHTML("beforeend",'<div class="categoria-vacia">No hay productos que coincidan con la búsqueda dentro de esta categoría.</div>');
+    return;
+  }
+
+  const totalPaginas=Math.max(1,Math.ceil(filtrados.length/OBJETIVOS_POR_PAGINA));
+  paginaObjetivosAdmin=Math.min(paginaObjetivosAdmin,totalPaginas);
+  const inicio=(paginaObjetivosAdmin-1)*OBJETIVOS_POR_PAGINA;
+  const pagina=filtrados.slice(inicio,inicio+OBJETIVOS_POR_PAGINA);
+
+  const info=document.createElement("p");
+  info.className="info-pagina-objetivos";
+  info.textContent=`Mostrando ${inicio+1}–${Math.min(inicio+OBJETIVOS_POR_PAGINA,filtrados.length)} de ${filtrados.length} productos`;
+  l.appendChild(info);
+
+  const grilla=document.createElement("div");
+  grilla.className="objetivos-admin-paginados";
+
+  pagina.forEach(o=>{
     const cantidad=Math.max(1,numeroSeguro(o.cantidadNecesaria||1));
     const unitario=numeroSeguro(o.precioUnitario||o.precio||0);
     const impuestos=Array.isArray(o.impuestos)?o.impuestos:[];
     const calc=calcularTotales(cantidad,unitario,impuestos);
-    const precio=numeroSeguro(o.precio||calc.precio);const rec=Math.min(numeroSeguro(o.recaudado),precio);const falt=Math.max(0,precio-rec);const pct=precio?Math.min(100,Math.round(rec/precio*100)):0;
-    const div=document.createElement("div");div.className="card";div.innerHTML=`
+    const precio=numeroSeguro(o.precio||calc.precio);
+    const rec=Math.min(numeroSeguro(o.recaudado),precio);
+    const falt=Math.max(0,precio-rec);
+    const pct=precio?Math.min(100,Math.round(rec/precio*100)):0;
+    const div=document.createElement("div");
+    div.className="card";
+    div.innerHTML=`
       ${o.imagenUrl?`<img class="imagen-admin" src="${limpiarTexto(o.imagenUrl)}" alt="${limpiarTexto(o.nombre)}">`:""}
-      <div class="objetivo-categoria-admin">${o.categoriaNombre||"Sin categoría"}</div><h3>${o.nombre||"Sin nombre"}</h3><p>${o.descripcion||""}</p>
+      <div class="objetivo-categoria-admin">${limpiarTexto(o.categoriaNombre||"Sin categoría")}</div>
+      <h3>${limpiarTexto(o.nombre||"Sin nombre")}</h3><p>${limpiarTexto(o.descripcion||"")}</p>
       <div class="barra"><div class="progreso" style="width:${pct}%"></div></div>
       <p><strong>Cantidad:</strong> ${cantidad}</p><p><strong>Precio unitario sin impuestos:</strong> ${formatoPesos.format(unitario)}</p>
       <p><strong>Subtotal:</strong> ${formatoPesos.format(calc.subtotal)}</p>
       ${impuestos.length?`<div class="impuestos-resumen-card"><strong>Impuestos:</strong>${impuestos.map(i=>`<span>${limpiarTexto(i.nombre)} ${numeroSeguro(i.porcentaje)}%: ${formatoPesos.format(calc.subtotal*numeroSeguro(i.porcentaje)/100)}</span>`).join("")}</div>`:'<p><strong>Impuestos:</strong> No aplica</p>'}
       <p><strong>Total impuestos:</strong> ${formatoPesos.format(calc.montoImpuestos)}</p><p><strong>Precio total:</strong> ${formatoPesos.format(precio)}</p>
       <p><strong>Recaudado:</strong> ${formatoPesos.format(rec)}</p><p><strong>Faltante:</strong> ${formatoPesos.format(falt)}</p>
-      <button onclick="abrirEditorObjetivo('${o.id}')">Editar datos</button><button class="btn-danger" onclick="eliminarObjetivo('${o.id}')">Eliminar</button>`;l.appendChild(div);
+      <div class="admin-actions"><button onclick="abrirEditorObjetivo('${o.id}')">Editar datos</button><button class="btn-danger" onclick="eliminarObjetivo('${o.id}')">Eliminar</button></div>`;
+    grilla.appendChild(div);
   });
+  l.appendChild(grilla);
+  renderPaginadorAdmin(l,totalPaginas);
 }
 
 window.abrirEditorObjetivo=id=>{

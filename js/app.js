@@ -8,6 +8,8 @@ let objetivoSeleccionado = null;
 let objetivosPublicosCache = [];
 let categoriasPublicasCache = [];
 let categoriaPublicaActiva = null;
+let paginaObjetivosPublica = 1;
+const OBJETIVOS_PUBLICOS_POR_PAGINA = 6;
 
 const formatoPesos = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 });
 
@@ -231,7 +233,7 @@ function renderCategoriasPublicas() {
       <button type="button" class="btn-ver-objetivos">Ver objetivos</button>
     `;
 
-    const abrir = () => renderObjetivosCategoria(categoria);
+    const abrir = () => { paginaObjetivosPublica=1; renderObjetivosCategoria(categoria); };
     tarjeta.querySelector(".btn-ver-objetivos").addEventListener("click", e => {
       e.stopPropagation();
       abrir();
@@ -251,6 +253,27 @@ function renderCategoriasPublicas() {
   }
 }
 
+function renderPaginadorPublico(contenedor,totalPaginas,categoria){
+  if(totalPaginas<=1) return;
+  const pag=document.createElement("nav");
+  pag.className="paginador-objetivos";
+  pag.setAttribute("aria-label","Páginas de objetivos");
+  pag.innerHTML=`
+    <button type="button" ${paginaObjetivosPublica===1?"disabled":""} data-pagina="${paginaObjetivosPublica-1}">← Anterior</button>
+    <div class="paginador-numeros">
+      ${Array.from({length:totalPaginas},(_,i)=>i+1).map(n=>`<button type="button" class="${n===paginaObjetivosPublica?"activo":""}" data-pagina="${n}" aria-label="Página ${n}">${n}</button>`).join("")}
+    </div>
+    <button type="button" ${paginaObjetivosPublica===totalPaginas?"disabled":""} data-pagina="${paginaObjetivosPublica+1}">Siguiente →</button>
+  `;
+  pag.addEventListener("click",e=>{
+    const btn=e.target.closest("[data-pagina]");
+    if(!btn||btn.disabled) return;
+    paginaObjetivosPublica=Math.max(1,Math.min(totalPaginas,Number(btn.dataset.pagina)||1));
+    renderObjetivosCategoria(categoria);
+  });
+  contenedor.appendChild(pag);
+}
+
 function renderObjetivosCategoria(categoria) {
   categoriaPublicaActiva = categoria.id;
   const contenedor = document.getElementById("contenedorObjetivos");
@@ -259,16 +282,23 @@ function renderObjetivosCategoria(categoria) {
   const titulo = document.querySelector("#objetivos h2");
   if (titulo) titulo.textContent = categoria.nombre || "Objetivos";
 
-  const objetivos = objetivosDeCategoria(categoria.id);
+  const objetivos = objetivosDeCategoria(categoria.id)
+    .slice()
+    .sort((a,b)=>String(a.nombre||"").localeCompare(String(b.nombre||""),"es"));
+
   contenedor.innerHTML = `
     <div class="categoria-publica-cabecera">
       <button type="button" class="btn-volver-categorias">← Volver a categorías</button>
       ${categoria.descripcion ? `<p>${categoria.descripcion}</p>` : ""}
     </div>
+    <p id="infoPaginaPublica" class="info-pagina-objetivos"></p>
     <div id="listaObjetivosCategoria" class="lista-objetivos-categoria"></div>
   `;
 
-  contenedor.querySelector(".btn-volver-categorias").addEventListener("click", renderCategoriasPublicas);
+  contenedor.querySelector(".btn-volver-categorias").addEventListener("click",()=>{
+    paginaObjetivosPublica=1;
+    renderCategoriasPublicas();
+  });
   const lista = contenedor.querySelector("#listaObjetivosCategoria");
 
   if (!objetivos.length) {
@@ -276,7 +306,14 @@ function renderObjetivosCategoria(categoria) {
     return;
   }
 
-  objetivos.forEach(o => {
+  const totalPaginas=Math.max(1,Math.ceil(objetivos.length/OBJETIVOS_PUBLICOS_POR_PAGINA));
+  paginaObjetivosPublica=Math.min(paginaObjetivosPublica,totalPaginas);
+  const inicio=(paginaObjetivosPublica-1)*OBJETIVOS_PUBLICOS_POR_PAGINA;
+  const pagina=objetivos.slice(inicio,inicio+OBJETIVOS_PUBLICOS_POR_PAGINA);
+  const info=contenedor.querySelector("#infoPaginaPublica");
+  if(info) info.textContent=`Mostrando ${inicio+1}–${Math.min(inicio+OBJETIVOS_PUBLICOS_POR_PAGINA,objetivos.length)} de ${objetivos.length} objetivos`;
+
+  pagina.forEach(o => {
     const precio = Number(o.precio || 0);
     const cantidadNecesaria = Math.max(1, Number(o.cantidadNecesaria || 1));
     const precioUnitario = Number(o.precioUnitario || precio);
@@ -304,6 +341,7 @@ function renderObjetivosCategoria(categoria) {
     lista.appendChild(card);
   });
 
+  renderPaginadorPublico(contenedor,totalPaginas,categoria);
   document.getElementById("objetivos")?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
