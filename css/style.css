@@ -2457,3 +2457,92 @@ body.fondo-publico-activo .public-panel.activo {
   }
 }
 
+/* ZIP - Categorías navegables y paginación de objetivos */
+.categorias-objetivos-admin-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+  gap:20px;
+  margin-top:18px;
+}
+.categoria-objetivos-admin-card{
+  background:#fff;
+  border:1px solid #dce5ed;
+  border-radius:22px;
+  padding:22px;
+  box-shadow:0 14px 35px rgba(18,38,63,.10);
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:14px 16px;
+  cursor:pointer;
+  transition:transform .15s ease,box-shadow .15s ease;
+}
+.categoria-objetivos-admin-card:hover,
+.categoria-objetivos-admin-card:focus{
+  transform:translateY(-3px);
+  box-shadow:0 22px 48px rgba(18,38,63,.16);
+  outline:none;
+}
+.categoria-admin-icono{
+  width:52px;height:52px;border-radius:15px;
+  display:grid;place-items:center;font-size:28px;
+  background:linear-gradient(135deg,#edf7f1,#e9f2fa);
+}
+.categoria-admin-contenido{min-width:0}
+.categoria-admin-contenido h3{margin:2px 0 7px;font-size:21px}
+.categoria-admin-contenido p{color:#536879;line-height:1.4}
+.categoria-admin-estadisticas{
+  display:flex;flex-wrap:wrap;gap:8px 16px;
+  margin:14px 0 10px;color:#29465d;font-size:14px;
+}
+.categoria-admin-progreso{
+  display:flex;justify-content:space-between;gap:12px;
+  color:#36546b;font-size:13px;
+}
+.btn-abrir-categoria-admin{
+  grid-column:1/-1;width:100%;margin:4px 0 0!important;
+}
+.categoria-admin-cabecera,
+.categoria-publica-cabecera{
+  background:#fff;border:1px solid #dce5ed;border-radius:18px;
+  padding:18px;margin:16px 0;box-shadow:0 10px 26px rgba(18,38,63,.08);
+}
+.categoria-admin-cabecera h3{margin:12px 0 4px;font-size:24px}
+.categoria-admin-cabecera p,.categoria-publica-cabecera p{color:#536879;line-height:1.45}
+.btn-volver-categorias-admin,.btn-volver-categorias{margin:0!important}
+.objetivos-admin-paginados,
+.lista-objetivos-categoria{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:20px;
+  align-items:start;
+}
+.objetivos-admin-paginados .card,
+.lista-objetivos-categoria .card{margin:0;height:100%}
+.info-pagina-objetivos{
+  margin:12px 0 14px;
+  color:#536879;
+  font-weight:700;
+}
+.paginador-objetivos{
+  display:flex;align-items:center;justify-content:center;
+  gap:10px;flex-wrap:wrap;margin:24px 0 8px;
+}
+.paginador-numeros{display:flex;gap:7px;flex-wrap:wrap;justify-content:center}
+.paginador-objetivos button{
+  min-width:42px;margin:0!important;padding:9px 12px;
+}
+.paginador-objetivos button.activo{
+  background:linear-gradient(135deg,#0f4f2f,#159447);
+  box-shadow:0 8px 18px rgba(15,79,47,.22);
+}
+.paginador-objetivos button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+@media(max-width:800px){
+  .categorias-objetivos-admin-grid,
+  .objetivos-admin-paginados,
+  .lista-objetivos-categoria{grid-template-columns:1fr}
+  .categoria-admin-progreso{flex-direction:column;gap:4px}
+  .paginador-objetivos{align-items:stretch}
+  .paginador-objetivos>button{flex:1}
+  .paginador-numeros{width:100%;order:3}
+}
+
